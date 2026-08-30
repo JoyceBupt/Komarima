@@ -1,0 +1,140 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        with:
+          version: 11.18.0
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify release tag
+        run: pnpm verify:release-tag
+
+      - name: Run source gates
+        run: |
+          pnpm format:check
+          pnpm lint
+          pnpm test
+          pnpm supply-chain:check
+          pnpm audit --audit-level high
+
+      - name: Build release archive
+        run: pnpm build:theme
+
+      - name: Verify reproducible archive
+        env:
+          ARCHIVE: artifacts/komarima-${{ github.ref_name }}.zip
+        run: |
+          first_digest="$(sha256sum "$ARCHIVE" | cut -d ' ' -f 1)"
+          pnpm build:theme
+          second_digest="$(sha256sum "$ARCHIVE" | cut -d ' ' -f 1)"
+          test "$first_digest" = "$second_digest"
+
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Test production bundle
+        env:
+          PLAYWRIGHT_SERVER_COMMAND: pnpm exec vite preview --host 127.0.0.1 --port 4173
+        run: pnpm exec playwright test tests/e2e/app.spec.ts tests/e2e/accessibility.spec.ts --project=chromium --workers=1
+
+      - name: Upload release assets
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-assets
+          path: |
+            artifacts/komarima-${{ github.ref_name }}.zip
+            artifacts/komarima-${{ github.ref_name }}.zip.sha256
+            sbom.cdx.json
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 3
+
+  visual:
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        with:
+          version: 11.18.0
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify release tag
+        run: pnpm verify:release-tag
+
+      - name: Install Chromium
+        run: pnpm exec playwright install chromium
+
+      - name: Visual regression tests
+        run: pnpm exec playwright test tests/e2e/visual.spec.ts --project=chromium --workers=1
+
+  publish:
+    needs: [build, visual]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Download release assets
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: release-assets
+          path: release-assets
+
+      - name: Verify archive checksum
+        working-directory: release-assets
+        run: sha256sum --check "komarima-${{ github.ref_name }}.zip.sha256"
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh release create "${{ github.ref_name }}"
+          "release-assets/komarima-${{ github.ref_name }}.zip"
+          "release-assets/komarima-${{ github.ref_name }}.zip.sha256"
+          "release-assets/sbom.cdx.json"
+          --generate-notes
+          --repo "${{ github.repository }}"
+          --title "Komarima ${{ github.ref_name }}"
+          --verify-tag

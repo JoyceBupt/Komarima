@@ -1,0 +1,37 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": [
+    {
+      "name": "cpu.usage",
+      "description": "CPU usage percentage",
+      "type": "gauge",
+      "unit": "%",
+      "retention_days": 30,
+      "created_at": "2026-08-01T00:00:00Z",
+      "updated_at": "2026-08-30T00:00:00Z"
+    },
+    {
+      "name": "load.average",
+      "type": "gauge",
+      "retention_days": 30,
+      "created_at": "2026-08-01T00:00:00Z",
+      "updated_at": "2026-08-30T00:00:00Z"
+    },
+    {
+      "name": "net.total.up",
+      "description": {
+        "en": "Network total upload",
+        "zh-CN": "累计上传"
+      },
+      "type": "counter",
+      "unit": "bytes",
+      "retention_days": 30,
+      "metadata": {
+        "source": "agent"
+      },
+      "created_at": "2026-08-01T00:00:00Z",
+      "updated_at": "2026-08-30T00:00:00Z"
+    }
+  ]
+}

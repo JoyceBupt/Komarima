@@ -1,0 +1,21 @@
+{
+  "status": "success",
+  "message": "",
+  "data": {
+    "sitename": "Private Komari",
+    "description": "Private probe workspace",
+    "custom_head": "",
+    "custom_body": "",
+    "oauth_enable": false,
+    "oauth_provider": "github",
+    "disable_password_login": false,
+    "cors_origin_check_enabled": true,
+    "record_enabled": true,
+    "record_preserve_time": 24,
+    "ping_record_preserve_time": 24,
+    "private_site": true,
+    "visitor_audit_enabled": false,
+    "theme": "Komarima",
+    "theme_settings": {}
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "status": "success",
+  "message": "",
+  "data": {
+    "sitename": "Komarima Lab",
+    "description": "Probe workspace",
+    "custom_head": "",
+    "custom_body": "",
+    "oauth_enable": true,
+    "oauth_provider": "github",
+    "disable_password_login": false,
+    "cors_origin_check_enabled": true,
+    "record_enabled": true,
+    "record_preserve_time": 720,
+    "ping_record_preserve_time": 720,
+    "private_site": false,
+    "visitor_audit_enabled": false,
+    "theme": "Komarima",
+    "theme_settings": {
+      "defaultAppearance": "system",
+      "refreshIntervalSeconds": 10,
+      "staleAfterSeconds": 30
+    }
+  }
+}

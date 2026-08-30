@@ -1,0 +1,6 @@
+packages:
+  - .
+allowBuilds:
+  msw: true
+minimumReleaseAgeExclude:
+  - zod@4.5.4

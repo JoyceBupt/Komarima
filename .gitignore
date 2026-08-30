@@ -1,0 +1,11 @@
+node_modules/
+dist/
+coverage/
+artifacts/
+output/
+.DS_Store
+*.log
+*.tsbuildinfo
+
+# Rejected exploration drafts are preserved locally but are not implementation references.
+design/mockups/

@@ -1,0 +1,50 @@
+{
+  "name": "Komarima",
+  "short": "Komarima",
+  "description": "An Xcode-inspired probe workspace for Komari.",
+  "version": "0.1.0",
+  "author": "Komarima contributors",
+  "preview": "preview.png",
+  "configuration": {
+    "type": "managed",
+    "name": "Komarima 设置",
+    "data": [
+      {
+        "type": "title",
+        "name": "外观"
+      },
+      {
+        "key": "defaultAppearance",
+        "name": "默认外观",
+        "type": "select",
+        "options": "system,light,dark",
+        "default": "system"
+      },
+      {
+        "type": "title",
+        "name": "数据"
+      },
+      {
+        "key": "refreshIntervalSeconds",
+        "name": "刷新间隔",
+        "type": "number",
+        "default": 5,
+        "help": "单位：秒"
+      },
+      {
+        "key": "staleAfterSeconds",
+        "name": "延迟阈值",
+        "type": "number",
+        "default": 60,
+        "help": "单位：秒"
+      },
+      {
+        "key": "offlinePosition",
+        "name": "离线排序",
+        "type": "select",
+        "options": "keep,last",
+        "default": "keep"
+      }
+    ]
+  }
+}

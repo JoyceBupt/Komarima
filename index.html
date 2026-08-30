@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="description" content="A simple server monitor tool." />
+    <title>Komari Monitor</title>
+    <script>
+      ;(() => {
+        const values = ['system', 'light', 'dark']
+        let preference = 'system'
+
+        try {
+          const stored = window.localStorage.getItem('appearance')
+          const legacy = window.localStorage.getItem('komarima-theme')
+          const candidate = values.includes(stored)
+            ? stored
+            : values.includes(legacy)
+              ? legacy
+              : null
+
+          if (candidate) {
+            preference = candidate
+            window.localStorage.setItem('appearance', candidate)
+          } else if (stored !== null) {
+            window.localStorage.removeItem('appearance')
+          }
+          window.localStorage.removeItem('komarima-theme')
+        } catch {
+          // Storage can be unavailable; the system appearance remains safe.
+        }
+
+        const dark =
+          preference === 'system' &&
+          window.matchMedia?.('(prefers-color-scheme: dark)').matches
+        document.documentElement.dataset.theme =
+          preference === 'system' ? (dark ? 'dark' : 'light') : preference
+        document.documentElement.dataset.themePreference = preference
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

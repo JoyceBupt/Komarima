@@ -1,0 +1,77 @@
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "result": {
+    "node-online": {
+      "client": "node-online",
+      "time": "2026-08-30T03:59:55Z",
+      "cpu": 23.5,
+      "gpu": 0,
+      "ram": 4294967296,
+      "ram_total": 8589934592,
+      "swap": 0,
+      "swap_total": 2147483648,
+      "load": 0.42,
+      "load5": 0.36,
+      "load15": 0.31,
+      "temp": 0,
+      "disk": 53687091200,
+      "disk_total": 107374182400,
+      "net_in": 2048,
+      "net_out": 1024,
+      "net_total_up": 5000000,
+      "net_total_down": 9000000,
+      "process": 112,
+      "connections": 42,
+      "connections_udp": 7,
+      "online": true,
+      "uptime": 86400,
+      "ping": {
+        "8": {
+          "name": "Tokyo ICMP",
+          "latest": 21,
+          "avg": 24,
+          "tail": 0.25,
+          "loss": 0,
+          "min": 18,
+          "max": 39
+        },
+        "7": {
+          "name": "Backup TCP",
+          "latest": -1,
+          "avg": 0,
+          "tail": 0,
+          "loss": 100,
+          "min": 0,
+          "max": 0
+        }
+      }
+    },
+    "node-offline": {
+      "client": "node-offline",
+      "time": "2026-08-30T03:40:00Z",
+      "cpu": 0,
+      "gpu": 0,
+      "ram": 8589934592,
+      "ram_total": 17179869184,
+      "swap": 0,
+      "swap_total": 0,
+      "load": 0,
+      "load5": 0,
+      "load15": 0,
+      "temp": 0,
+      "disk": 107374182400,
+      "disk_total": 214748364800,
+      "net_in": 0,
+      "net_out": 0,
+      "net_total_up": 12000000,
+      "net_total_down": 22000000,
+      "process": 0,
+      "connections": 0,
+      "connections_udp": 0,
+      "online": false,
+      "uptime": 172800,
+      "ping": {}
+    }
+  }
+}

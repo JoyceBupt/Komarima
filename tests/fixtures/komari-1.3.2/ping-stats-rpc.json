@@ -1,0 +1,48 @@
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "start": "2026-08-30T03:00:00Z",
+    "end": "2026-08-30T04:00:00Z",
+    "interval_seconds": 60,
+    "stats": [
+      {
+        "entity_id": "node-online",
+        "task_id": "8",
+        "name": "Tokyo ICMP",
+        "type": "icmp",
+        "interval": 60,
+        "tags": {
+          "task_id": "8"
+        },
+        "total": 60,
+        "valid": 59,
+        "loss": 1.6666666667,
+        "min": 18,
+        "max": 39,
+        "avg": 24,
+        "latest": 21,
+        "p50": 22,
+        "p99": 35,
+        "stddev": 3.2,
+        "p99_p50_ratio": 0.59
+      },
+      {
+        "entity_id": "node-online",
+        "task_id": "7",
+        "name": "Backup TCP",
+        "type": "tcp",
+        "interval": 60,
+        "tags": {
+          "task_id": "7"
+        },
+        "total": 60,
+        "valid": 0,
+        "loss": 100,
+        "loss_approximate": false,
+        "p99_p50_ratio": 0
+      }
+    ],
+    "count": 2
+  }
+}

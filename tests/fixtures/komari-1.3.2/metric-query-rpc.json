@@ -1,0 +1,83 @@
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "result": {
+    "start": "2026-08-30T03:00:00Z",
+    "end": "2026-08-30T04:00:00Z",
+    "server_downsample_default": true,
+    "default_points": 500,
+    "series": [
+      {
+        "metric_key": "cpu.usage",
+        "entity_id": "node-online",
+        "type": "gauge",
+        "unit": "%",
+        "retention_days": 30,
+        "downsampled": true,
+        "downsample_algorithm": "avg",
+        "fill_empty": true,
+        "max_points": 240,
+        "interval_seconds": 60,
+        "count": 5,
+        "points": [
+          { "time": "2026-08-30T03:00:00Z", "value": 10, "count": 1 },
+          { "time": "2026-08-30T03:01:00Z", "value": 20, "count": 1 },
+          { "time": "2026-08-30T03:02:00Z", "value": null },
+          { "time": "2026-08-30T03:10:00Z", "value": 30, "count": 1 },
+          { "time": "2026-08-30T03:11:00Z", "value": 40, "count": 1 }
+        ]
+      },
+      {
+        "metric_key": "net.total.up",
+        "entity_id": "node-online",
+        "type": "counter",
+        "unit": "bytes",
+        "retention_days": 30,
+        "downsampled": false,
+        "max_points": 240,
+        "count": 5,
+        "points": [
+          { "time": "2026-08-30T03:00:00Z", "value": 100, "count": 1 },
+          { "time": "2026-08-30T03:01:00Z", "value": 150, "count": 1 },
+          { "time": "2026-08-30T03:02:00Z", "value": 20, "count": 1 },
+          { "time": "2026-08-30T03:03:00Z", "value": 50, "count": 1 },
+          { "time": "2026-08-30T03:04:00Z", "value": 80, "count": 1 }
+        ]
+      },
+      {
+        "metric_key": "ping.latency_ms",
+        "entity_id": "node-online",
+        "type": "gauge",
+        "unit": "ms",
+        "retention_days": 30,
+        "tags": { "task_id": "8" },
+        "downsampled": true,
+        "downsample_algorithm": "avg",
+        "fill_empty": true,
+        "max_points": 240,
+        "interval_seconds": 60,
+        "count": 3,
+        "points": [
+          {
+            "time": "2026-08-30T03:00:00Z",
+            "value": 20,
+            "count": 1,
+            "tags": { "task_id": "8" }
+          },
+          {
+            "time": "2026-08-30T03:01:00Z",
+            "value": null,
+            "tags": { "task_id": "8" }
+          },
+          {
+            "time": "2026-08-30T03:02:00Z",
+            "value": 22,
+            "count": 1,
+            "tags": { "task_id": "8" }
+          }
+        ]
+      }
+    ],
+    "count": 3
+  }
+}
