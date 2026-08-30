@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
+  P0_MAX_METRIC_INPUT_ITEMS,
+  P0_MAX_PING_TASK_INPUT_ITEMS,
   normalizeP0MetricQueryParams,
   normalizeP0PingStatsParams,
 } from './policy'
@@ -102,6 +104,26 @@ describe('P0 Metric query policy', () => {
       }),
     ).toMatchObject({ tags: { task_id: '8' }, max_points: 240 })
   })
+
+  it('canonicalizes duplicate metric selectors and rejects oversized input', () => {
+    expect(
+      normalizeP0MetricQueryParams({
+        metric_keys: [' cpu.usage ', 'cpu.usage', 'memory.used'],
+        metrics: ['memory.used'],
+        entity_id: 'node-a',
+      }),
+    ).toMatchObject({ metric_keys: ['cpu.usage', 'memory.used'] })
+
+    expect(() =>
+      normalizeP0MetricQueryParams({
+        metric_keys: Array.from(
+          { length: P0_MAX_METRIC_INPUT_ITEMS + 1 },
+          () => 'cpu.usage',
+        ),
+        entity_id: 'node-a',
+      }),
+    ).toThrow('metric selector inputs')
+  })
 })
 
 describe('P0 Ping query policy', () => {
@@ -134,5 +156,31 @@ describe('P0 Ping query policy', () => {
         max_points: 500,
       }),
     ).toThrow('120 to 360')
+  })
+
+  it('canonicalizes duplicate task selectors and rejects oversized input', () => {
+    expect(
+      normalizeP0PingStatsParams({
+        uuid: 'node-a',
+        task_id: 8,
+        task_ids: [8, '8', 9, '9'],
+      }),
+    ).toEqual({
+      uuid: 'node-a',
+      task_id: 8,
+      task_ids: [9],
+      hours: 4,
+      max_points: 240,
+    })
+
+    expect(() =>
+      normalizeP0PingStatsParams({
+        uuid: 'node-a',
+        task_ids: Array.from(
+          { length: P0_MAX_PING_TASK_INPUT_ITEMS + 1 },
+          () => 8,
+        ),
+      }),
+    ).toThrow('task selector inputs')
   })
 })

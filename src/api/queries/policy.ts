@@ -28,6 +28,8 @@ export const P0_MIN_MAX_POINTS = 120
 export const P0_MAX_MAX_POINTS = 360
 export const P0_MAX_METRICS_PER_QUERY = 4
 export const P0_MAX_PING_TASKS_PER_QUERY = 8
+export const P0_MAX_METRIC_INPUT_ITEMS = P0_MAX_METRICS_PER_QUERY * 4
+export const P0_MAX_PING_TASK_INPUT_ITEMS = P0_MAX_PING_TASKS_PER_QUERY * 4
 export const P0_DEFAULT_HOURS = 4
 export const P0_MIN_HOURS = 1
 export const P0_MAX_HOURS = 24 * 30
@@ -150,28 +152,41 @@ export const normalizeP0MetricQueryParams = (
     )
   }
 
-  const canonicalParams: MetricQueryParams = {
-    ...params,
-    entity_id: entityId,
-    ...(params.metric_key !== undefined
-      ? { metric_key: params.metric_key.trim() }
-      : {}),
-    ...(params.metric_keys !== undefined
-      ? { metric_keys: params.metric_keys.map((key) => key.trim()) }
-      : {}),
-    ...(params.metrics !== undefined
-      ? { metrics: params.metrics.map((key) => key.trim()) }
-      : {}),
-    ...(params.tags?.task_id !== undefined
-      ? { tags: { ...params.tags, task_id: params.tags.task_id.trim() } }
-      : {}),
+  const rawMetricInputCount =
+    (params.metric_key === undefined ? 0 : 1) +
+    (params.metric_keys?.length ?? 0) +
+    (params.metrics?.length ?? 0)
+  if (rawMetricInputCount > P0_MAX_METRIC_INPUT_ITEMS) {
+    throw new QueryPolicyError(
+      `P0 Metric history accepts at most ${P0_MAX_METRIC_INPUT_ITEMS} metric selector inputs`,
+    )
   }
 
-  const metricKeys = normalizedMetricKeys(canonicalParams)
+  const metricKeys = normalizedMetricKeys(params)
   if (metricKeys.length === 0 || metricKeys.length > P0_MAX_METRICS_PER_QUERY) {
     throw new QueryPolicyError(
       `P0 Metric history requires 1-${P0_MAX_METRICS_PER_QUERY} metrics`,
     )
+  }
+
+  const canonicalParams: MetricQueryParams = {
+    ...params,
+    entity_id: entityId,
+    ...(params.tags?.task_id !== undefined
+      ? { tags: { ...params.tags, task_id: params.tags.task_id.trim() } }
+      : {}),
+  }
+  delete canonicalParams.metric_key
+  delete canonicalParams.metric_keys
+  delete canonicalParams.metrics
+  if (
+    params.metric_key !== undefined &&
+    params.metric_keys === undefined &&
+    params.metrics === undefined
+  ) {
+    canonicalParams.metric_key = metricKeys[0]!
+  } else {
+    canonicalParams.metric_keys = metricKeys
   }
   for (const metricKey of metricKeys) {
     if (!allowedMetricKeys.has(metricKey)) {
@@ -240,6 +255,13 @@ export const normalizeP0PingStatsParams = (
   if (params.task_ids !== undefined && params.task_ids.length === 0) {
     throw new QueryPolicyError('task_ids cannot be empty')
   }
+  const rawTaskInputCount =
+    (params.task_id === undefined ? 0 : 1) + (params.task_ids?.length ?? 0)
+  if (rawTaskInputCount > P0_MAX_PING_TASK_INPUT_ITEMS) {
+    throw new QueryPolicyError(
+      `P0 Ping history accepts at most ${P0_MAX_PING_TASK_INPUT_ITEMS} task selector inputs`,
+    )
+  }
 
   const normalizeTaskId = (value: string | number) => {
     if (typeof value === 'number') {
@@ -259,12 +281,18 @@ export const normalizeP0PingStatsParams = (
 
   const taskId =
     params.task_id === undefined ? undefined : normalizeTaskId(params.task_id)
-  const normalizedTaskIds = params.task_ids?.map(normalizeTaskId)
-  const taskIds = [
-    ...(taskId === undefined ? [] : [String(taskId)]),
-    ...(normalizedTaskIds ?? []).map(String),
-  ]
-  const taskCount = new Set(taskIds).size
+  const seenTaskIds = new Set<string>(
+    taskId === undefined ? [] : [String(taskId)],
+  )
+  const normalizedTaskIds = params.task_ids
+    ?.map(normalizeTaskId)
+    .filter((value) => {
+      const key = String(value)
+      if (seenTaskIds.has(key)) return false
+      seenTaskIds.add(key)
+      return true
+    })
+  const taskCount = seenTaskIds.size
   if (taskCount === 0 || taskCount > P0_MAX_PING_TASKS_PER_QUERY) {
     throw new QueryPolicyError(
       `P0 Ping history requires 1-${P0_MAX_PING_TASKS_PER_QUERY} tasks`,
@@ -273,12 +301,16 @@ export const normalizeP0PingStatsParams = (
 
   const maxPoints = params.max_points ?? P0_DEFAULT_MAX_POINTS
   assertPointLimit(maxPoints, 'max_points')
-  return normalizeTimeWindow({
+  const canonicalParams: PingMetricStatsParams = {
     ...params,
     ...(uuid ? { uuid } : {}),
     ...(entityId ? { entity_id: entityId } : {}),
     ...(taskId === undefined ? {} : { task_id: taskId }),
-    ...(normalizedTaskIds === undefined ? {} : { task_ids: normalizedTaskIds }),
     max_points: maxPoints,
-  })
+  }
+  delete canonicalParams.task_ids
+  if (normalizedTaskIds?.length) {
+    canonicalParams.task_ids = normalizedTaskIds
+  }
+  return normalizeTimeWindow(canonicalParams)
 }

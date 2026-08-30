@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import {
@@ -8,6 +15,7 @@ import {
   publicDataAccessScope,
   revokePublicDataAccess,
   settingsFromBootstrap,
+  shouldRecoverPublicDataAccess,
   useBootstrapQuery,
   useLatestStatusesQuery,
   useMetricQuery,
@@ -169,6 +177,10 @@ export function LiveProbeWorkspace({
   )
   const accessScope = publicDataAccessScope(bootstrapQuery.data)
   const previousAccessScope = useRef(accessScope)
+  const [recoveredAccessScopes, setRecoveredAccessScopes] = useState<
+    ReadonlySet<string>
+  >(() => new Set())
+  const recoveryStartedScopes = useRef(new Set<string>())
   const accessError = [
     nodesQuery.error,
     latestQuery.error,
@@ -177,6 +189,95 @@ export function LiveProbeWorkspace({
     pingTasks.error,
     pingHistory.error,
   ].find(isPublicDataAccessDenied)
+  const accessRecoveryPending = shouldRecoverPublicDataAccess(
+    accessScope,
+    recoveredAccessScopes,
+    accessError,
+  )
+  const historySeries = useMemo(
+    () =>
+      [
+        ...(resourceHistory.data?.series ?? []),
+        ...(networkHistory.data?.series ?? []),
+        ...(pingHistory.data?.series ?? []),
+      ].map(normalizeMetricSeries),
+    [networkHistory.data, pingHistory.data, resourceHistory.data],
+  )
+  const historyState: HistoryLoadState =
+    resourceHistory.isError ||
+    networkHistory.isError ||
+    pingTasks.isError ||
+    pingHistory.isError
+      ? 'error'
+      : resourceHistory.isPending ||
+          networkHistory.isPending ||
+          pingTasks.isPending ||
+          (Boolean(pingTask) && pingHistory.isPending)
+        ? 'loading'
+        : 'ready'
+  const closeHistory = useCallback(() => {
+    const next = new URLSearchParams(searchParams)
+    next.delete('view')
+    next.delete('range')
+    setSearchParams(next, { replace: true })
+  }, [searchParams, setSearchParams])
+  const changeHistoryRange = useCallback(
+    (range: HistoryRange) => {
+      const next = new URLSearchParams(searchParams)
+      next.set('view', 'history')
+      next.set('range', range)
+      setSearchParams(next, { replace: true })
+    },
+    [searchParams, setSearchParams],
+  )
+  const { refetch: refetchResourceHistory } = resourceHistory
+  const { refetch: refetchNetworkHistory } = networkHistory
+  const { refetch: refetchPingTasks } = pingTasks
+  const { refetch: refetchPingHistory } = pingHistory
+  const retryHistory = useCallback(() => {
+    void refetchResourceHistory()
+    void refetchNetworkHistory()
+    void refetchPingTasks()
+    if (pingTask) void refetchPingHistory()
+  }, [
+    pingTask,
+    refetchNetworkHistory,
+    refetchPingHistory,
+    refetchPingTasks,
+    refetchResourceHistory,
+  ])
+  const historyContent = useMemo(
+    () =>
+      historyActive && selectedNode ? (
+        <section className="workspace-pane history-editor-shell">
+          <div className="history-editor-toolbar">
+            <button autoFocus onClick={closeHistory} type="button">
+              返回探针
+            </button>
+          </div>
+          <HistoryDetailView
+            defaultView="history"
+            errorMessage="历史暂不可用"
+            nodeName={selectedNode.name}
+            onRangeChange={changeHistoryRange}
+            onRetry={retryHistory}
+            range={historyRange}
+            series={historySeries}
+            state={historyState}
+          />
+        </section>
+      ) : undefined,
+    [
+      changeHistoryRange,
+      closeHistory,
+      historyActive,
+      historyRange,
+      historySeries,
+      historyState,
+      retryHistory,
+      selectedNode,
+    ],
+  )
 
   useEffect(() => {
     const previous = previousAccessScope.current
@@ -189,12 +290,26 @@ export function LiveProbeWorkspace({
   }, [accessScope, client, queryClient])
 
   useEffect(() => {
-    if (accessError) {
-      void revokePublicDataAccess(queryClient, client)
+    if (
+      !shouldRecoverPublicDataAccess(
+        accessScope,
+        recoveredAccessScopes,
+        accessError,
+      )
+    ) {
+      return
     }
-  }, [accessError, client, queryClient])
+    if (recoveryStartedScopes.current.has(accessScope)) return
+    recoveryStartedScopes.current.add(accessScope)
+    setRecoveredAccessScopes((current) => {
+      const next = new Set(current)
+      next.add(accessScope)
+      return next
+    })
+    void revokePublicDataAccess(queryClient, client)
+  }, [accessError, accessScope, client, queryClient, recoveredAccessScopes])
 
-  if (accessError) {
+  if (accessRecoveryPending) {
     return <WorkspaceGate title="正在验证" />
   }
 
@@ -278,60 +393,6 @@ export function LiveProbeWorkspace({
   const refreshLabel = latestQuery.isError
     ? '刷新失败'
     : refreshAgeLabel(latestQuery.dataUpdatedAt, now)
-  const historySeries = [
-    ...(resourceHistory.data?.series ?? []),
-    ...(networkHistory.data?.series ?? []),
-    ...(pingHistory.data?.series ?? []),
-  ].map(normalizeMetricSeries)
-  const historyState: HistoryLoadState =
-    resourceHistory.isError ||
-    networkHistory.isError ||
-    pingTasks.isError ||
-    pingHistory.isError
-      ? 'error'
-      : resourceHistory.isPending ||
-          networkHistory.isPending ||
-          pingTasks.isPending ||
-          (Boolean(pingTask) && pingHistory.isPending)
-        ? 'loading'
-        : 'ready'
-  const closeHistory = () => {
-    const next = new URLSearchParams(searchParams)
-    next.delete('view')
-    next.delete('range')
-    setSearchParams(next, { replace: true })
-  }
-  const historyContent =
-    historyActive && selectedNode ? (
-      <section className="workspace-pane history-editor-shell">
-        <div className="history-editor-toolbar">
-          <button onClick={closeHistory} type="button">
-            返回探针
-          </button>
-        </div>
-        <HistoryDetailView
-          defaultView="history"
-          errorMessage="历史暂不可用"
-          nodeName={selectedNode.name}
-          onRangeChange={(range) => {
-            const next = new URLSearchParams(searchParams)
-            next.set('view', 'history')
-            next.set('range', range)
-            setSearchParams(next, { replace: true })
-          }}
-          onRetry={() => {
-            void resourceHistory.refetch()
-            void networkHistory.refetch()
-            void pingTasks.refetch()
-            if (pingTask) void pingHistory.refetch()
-          }}
-          range={historyRange}
-          series={historySeries}
-          state={historyState}
-        />
-      </section>
-    ) : undefined
-
   return (
     <ProbeWorkspace
       defaultAppearance={settings.appearance}

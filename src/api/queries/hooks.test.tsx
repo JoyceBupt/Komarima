@@ -1,4 +1,5 @@
 import {
+  focusManager,
   QueryClient,
   QueryClientProvider,
   type QueryClientConfig,
@@ -16,6 +17,7 @@ import {
 import {
   isPublicDataAccessDenied,
   revokePublicDataAccess,
+  shouldRecoverPublicDataAccess,
   useBootstrapQuery,
   useLatestStatusesQuery,
   useMetricQuery,
@@ -108,6 +110,7 @@ const createWrapper = (config: QueryClientConfig = {}) => {
 afterEach(() => {
   vi.useRealTimers()
   vi.restoreAllMocks()
+  focusManager.setFocused(undefined)
 })
 
 describe('public query gates', () => {
@@ -138,6 +141,29 @@ describe('public query gates', () => {
     expect(
       client.getQueriesData({ queryKey: komariQueryKeys.dataRoot(api) }),
     ).toEqual([])
+  })
+
+  it('attempts access recovery only once for the same access scope', () => {
+    const recoveredScopes = new Set<string>()
+    const denial = new HttpError(403, 'denied', {})
+
+    expect(
+      shouldRecoverPublicDataAccess('guest:public', recoveredScopes, denial),
+    ).toBe(true)
+    recoveredScopes.add('guest:public')
+    expect(
+      shouldRecoverPublicDataAccess('guest:public', recoveredScopes, denial),
+    ).toBe(false)
+    expect(
+      shouldRecoverPublicDataAccess('user:admin-1', recoveredScopes, denial),
+    ).toBe(true)
+    expect(
+      shouldRecoverPublicDataAccess(
+        'guest:public',
+        recoveredScopes,
+        new HttpError(500, 'error', {}),
+      ),
+    ).toBe(false)
   })
 
   it('loads bootstrap over REST once', async () => {
@@ -236,6 +262,39 @@ describe('visibility and polling', () => {
     })
     await act(async () => vi.advanceTimersByTimeAsync(15_000))
     expect(api.getLatestStatuses).toHaveBeenCalledTimes(2)
+  })
+
+  it('refreshes node metadata every minute while visible and on focus', async () => {
+    vi.useFakeTimers()
+    let visibility: DocumentVisibilityState = 'visible'
+    vi.spyOn(document, 'visibilityState', 'get').mockImplementation(
+      () => visibility,
+    )
+    const api = createMockClient()
+    const { wrapper } = createWrapper()
+    renderHook(() => useNodesQuery(api, publicBootstrap), { wrapper })
+
+    await act(async () => Promise.resolve())
+    expect(api.listNodes).toHaveBeenCalledTimes(1)
+
+    await act(async () => vi.advanceTimersByTimeAsync(60_000))
+    expect(api.listNodes).toHaveBeenCalledTimes(2)
+
+    focusManager.setFocused(false)
+    act(() => {
+      visibility = 'hidden'
+      document.dispatchEvent(new Event('visibilitychange'))
+    })
+    await act(async () => vi.advanceTimersByTimeAsync(120_000))
+    expect(api.listNodes).toHaveBeenCalledTimes(2)
+
+    act(() => {
+      visibility = 'visible'
+      document.dispatchEvent(new Event('visibilitychange'))
+      focusManager.setFocused(true)
+    })
+    await act(async () => Promise.resolve())
+    expect(api.listNodes).toHaveBeenCalledTimes(3)
   })
 
   it('aborts an in-flight history request when the view closes', async () => {

@@ -1,7 +1,7 @@
 import { act, cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { NormalizedMetricSeries } from '../../domain'
-import { UPlotChart } from './UPlotChart'
+import { formatTimeAxisTick, UPlotChart } from './UPlotChart'
 
 interface FakePlotInstance {
   cursor: { idx: number | null }
@@ -68,6 +68,17 @@ const series: NormalizedMetricSeries = {
 }
 
 describe('UPlotChart cursor readout', () => {
+  it('formats short and long axes in zh-CN 24-hour time', () => {
+    const timestamp = Date.parse('2026-08-30T03:00:00Z') / 1_000
+
+    expect(formatTimeAxisTick(timestamp, 6 * 60 * 60, 'Asia/Shanghai')).toBe(
+      '11:00',
+    )
+    expect(formatTimeAxisTick(timestamp, 24 * 60 * 60, 'Asia/Shanghai')).toBe(
+      '08-30 11:00',
+    )
+  })
+
   it('starts at the latest sample and announces cursor time and value', () => {
     render(<UPlotChart label="CPU" series={series} />)
 

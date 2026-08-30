@@ -123,7 +123,7 @@ jobs:
           path: release-assets
 
       - name: Verify archive checksum
-        working-directory: release-assets
+        working-directory: release-assets/artifacts
         run: sha256sum --check "komarima-${{ github.ref_name }}.zip.sha256"
 
       - name: Publish GitHub release
@@ -131,8 +131,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: >-
           gh release create "${{ github.ref_name }}"
-          "release-assets/komarima-${{ github.ref_name }}.zip"
-          "release-assets/komarima-${{ github.ref_name }}.zip.sha256"
+          "release-assets/artifacts/komarima-${{ github.ref_name }}.zip"
+          "release-assets/artifacts/komarima-${{ github.ref_name }}.zip.sha256"
           "release-assets/sbom.cdx.json"
           --generate-notes
           --repo "${{ github.repository }}"

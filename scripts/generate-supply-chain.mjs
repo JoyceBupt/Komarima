@@ -6,6 +6,7 @@ import process from 'node:process'
 
 const root = resolve(import.meta.dirname, '..')
 const checkOnly = process.argv.includes('--check')
+const embeddedBuildInputs = new Set(['tailwindcss'])
 
 function fail(message) {
   throw new Error(message)
@@ -57,23 +58,33 @@ async function readLicenseText(packagePath) {
   return (await readFile(resolve(packagePath, candidates[0]), 'utf8')).trim()
 }
 
-async function collectProductionPackages() {
-  const raw = execFileSync('pnpm', ['licenses', 'list', '--prod', '--json'], {
+function readLicenseReport(args) {
+  const raw = execFileSync('pnpm', ['licenses', 'list', ...args, '--json'], {
     cwd: root,
     encoding: 'utf8',
     maxBuffer: 16 * 1024 * 1024,
   })
-  const licenses = JSON.parse(raw)
-  const packages = new Map()
 
+  return JSON.parse(raw)
+}
+
+async function addLicensedPackages(packages, licenses, include, releaseRole) {
   for (const entries of Object.values(licenses)) {
     for (const entry of entries) {
+      if (!include(entry)) continue
+
       for (const packagePath of entry.paths) {
         const packageJson = JSON.parse(
           await readFile(resolve(packagePath, 'package.json'), 'utf8'),
         )
         const key = `${packageJson.name}@${packageJson.version}`
-        if (packages.has(key)) continue
+        const existing = packages.get(key)
+        if (existing) {
+          if (releaseRole === 'embedded-build-input') {
+            existing.releaseRole = releaseRole
+          }
+          continue
+        }
 
         const source = normalizeSource(
           packageJson.homepage || packageJson.repository || entry.homepage,
@@ -84,8 +95,36 @@ async function collectProductionPackages() {
           license: packageJson.license || entry.license,
           source,
           licenseText: await readLicenseText(packagePath),
+          releaseRole,
         })
       }
+    }
+  }
+}
+
+async function collectReleasePackages() {
+  const packages = new Map()
+  await addLicensedPackages(
+    packages,
+    readLicenseReport(['--prod']),
+    () => true,
+    'runtime-dependency',
+  )
+  await addLicensedPackages(
+    packages,
+    readLicenseReport([]),
+    (entry) => embeddedBuildInputs.has(entry.name),
+    'embedded-build-input',
+  )
+  for (const name of embeddedBuildInputs) {
+    if (
+      ![...packages.values()].some(
+        (dependency) =>
+          dependency.name === name &&
+          dependency.releaseRole === 'embedded-build-input',
+      )
+    ) {
+      fail(`missing embedded build input license: ${name}`)
     }
   }
 
@@ -135,10 +174,14 @@ function collectDependencyGraph() {
 function createNotices(packages) {
   const sections = packages.map((dependency) => {
     const source = dependency.source ? `\nSource: ${dependency.source}` : ''
-    return `## ${dependency.name} ${dependency.version}\n\nLicense: ${dependency.license}${source}\n\n\`\`\`text\n${dependency.licenseText}\n\`\`\``
+    const releaseRole =
+      dependency.releaseRole === 'embedded-build-input'
+        ? '\nRelease role: Embedded build input'
+        : ''
+    return `## ${dependency.name} ${dependency.version}\n\nLicense: ${dependency.license}${source}${releaseRole}\n\n\`\`\`text\n${dependency.licenseText}\n\`\`\``
   })
 
-  return `# Third-Party Notices\n\nKomarima includes the following production dependencies. The CycloneDX SBOM records the same release dependency set.\n\n${sections.join('\n\n')}\n`
+  return `# Third-Party Notices\n\nKomarima includes the following runtime dependencies and build inputs whose code is embedded in the release artifact. The CycloneDX SBOM records the same release dependency set.\n\n${sections.join('\n\n')}\n`
 }
 
 async function createSbom(packages) {
@@ -148,6 +191,12 @@ async function createSbom(packages) {
   const lockfile = await readFile(resolve(root, 'pnpm-lock.yaml'))
   const rootRef = `pkg:npm/${encodeURIComponent(project.name)}@${project.version}`
   const { directRefs, graph } = collectDependencyGraph()
+  const embeddedBuildInputRefs = packages
+    .filter((dependency) => dependency.releaseRole === 'embedded-build-input')
+    .map((dependency) => packageUrl(dependency.name, dependency.version))
+  const releaseRefs = [
+    ...new Set([...directRefs, ...embeddedBuildInputRefs]),
+  ].sort()
   const components = packages.map((dependency) => {
     const component = {
       type: 'library',
@@ -156,6 +205,14 @@ async function createSbom(packages) {
       version: dependency.version,
       licenses: [{ expression: dependency.license }],
       purl: packageUrl(dependency.name, dependency.version),
+    }
+    if (dependency.releaseRole === 'embedded-build-input') {
+      component.properties = [
+        {
+          name: 'komarima:release-role',
+          value: dependency.releaseRole,
+        },
+      ]
     }
     if (dependency.source) {
       component.externalReferences = [
@@ -182,7 +239,7 @@ async function createSbom(packages) {
     },
     components,
     dependencies: [
-      { ref: rootRef, dependsOn: directRefs },
+      { ref: rootRef, dependsOn: releaseRefs },
       ...components.map((component) => ({
         ref: component['bom-ref'],
         dependsOn: [...(graph.get(component['bom-ref']) ?? [])].sort(),
@@ -194,7 +251,7 @@ async function createSbom(packages) {
     components.map((component) => component['bom-ref']),
   )
   const reachable = new Set()
-  const pending = [...directRefs]
+  const pending = [...releaseRefs]
   while (pending.length) {
     const ref = pending.pop()
     if (!ref || reachable.has(ref)) continue
@@ -218,14 +275,14 @@ async function writeOrCheck(path, expected) {
 }
 
 async function main() {
-  const packages = await collectProductionPackages()
+  const packages = await collectReleasePackages()
   const notices = createNotices(packages)
   const sbom = await createSbom(packages)
 
   await writeOrCheck(resolve(root, 'THIRD_PARTY_NOTICES.md'), notices)
   await writeOrCheck(resolve(root, 'sbom.cdx.json'), sbom)
   console.log(
-    `${checkOnly ? 'Verified' : 'Generated'} notices and SBOM for ${packages.length} production packages`,
+    `${checkOnly ? 'Verified' : 'Generated'} notices and SBOM for ${packages.length} release packages`,
   )
 }
 

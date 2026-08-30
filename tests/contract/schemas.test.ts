@@ -61,6 +61,15 @@ describe('Komari 1.3.2 response contracts', () => {
     expect(parsed.result['node-never-reported']).toBeUndefined()
   })
 
+  it('rejects a latest-status map whose key does not match client', () => {
+    const mismatched = structuredClone(latestStatusFixture)
+    mismatched.result['node-online']!.client = 'different-node'
+
+    expect(() =>
+      rpcResponseSchema(latestStatusMapSchema).parse(mismatched),
+    ).toThrow('does not match client')
+  })
+
   it('preserves null metric points and tagged series', () => {
     const parsed = rpcResponseSchema(metricQueryResultSchema).parse(
       metricQueryFixture,

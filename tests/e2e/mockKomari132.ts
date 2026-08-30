@@ -29,13 +29,14 @@ export async function mockKomari132(
     privateSite?: boolean
     nodeCount?: number
     authenticated?: boolean
+    rpcDenied?: boolean
     unassignedDefaultPing?: boolean
     failPingTasks?: boolean
   } = {},
 ) {
   const rpcMethods: string[] = []
   let authenticated = Boolean(options.authenticated)
-  let rpcDenied = false
+  let rpcDenied = Boolean(options.rpcDenied)
   let meRequests = 0
   const publicNodes = options.nodeCount
     ? Array.from({ length: options.nodeCount }, (_, index) => ({

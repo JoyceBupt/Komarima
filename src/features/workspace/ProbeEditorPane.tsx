@@ -1,5 +1,12 @@
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+} from 'react'
 import { workspaceStatus } from './statusPresentation'
 import type { ProbeSort, ProbeSortKey, WorkspaceProbe } from './types'
 import { nextProbeSort, sortWorkspaceProbes } from './workspaceModel'
@@ -76,11 +83,18 @@ function SortableColumnHeader({
   const active = sort?.key === column
   const next = nextProbeSort(sort, column)
   const ariaSort = active && sort ? sort.direction : 'none'
+  const currentDirection =
+    active && sort ? (sort.direction === 'ascending' ? '升序' : '降序') : null
+  const nextDirection = next.direction === 'ascending' ? '升序' : '降序'
 
   return (
     <span aria-label={label} className={className}>
       <button
-        aria-label={`按${label}${next.direction === 'ascending' ? '升序' : '降序'}排列`}
+        aria-label={
+          currentDirection
+            ? `${label}，当前${currentDirection}，切换为${nextDirection}`
+            : `按${label}${nextDirection}排列`
+        }
         aria-pressed={active}
         data-sort-direction={ariaSort}
         className={`flex w-full cursor-pointer items-center gap-1 bg-transparent p-0 text-inherit ${
@@ -117,18 +131,26 @@ function probeSecondaryLabel(probe: WorkspaceProbe) {
 }
 
 function ProbeRow({
+  index,
+  setSize,
   probe,
   selected,
+  tabIndex,
+  onFocus,
+  onKeyDown,
   onSelect,
   style,
-  virtualIndex,
   measure,
 }: {
+  index: number
+  setSize: number
   probe: WorkspaceProbe
   selected: boolean
+  tabIndex: number
+  onFocus: () => void
+  onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void
   onSelect: (probe: WorkspaceProbe) => void
   style?: CSSProperties
-  virtualIndex?: number
   measure?: (element: HTMLButtonElement | null) => void
 }) {
   const status = workspaceStatus(probe)
@@ -136,10 +158,13 @@ function ProbeRow({
     <button
       aria-current={selected ? 'true' : undefined}
       className={selected ? 'probe-row is-selected' : 'probe-row'}
-      data-index={virtualIndex}
+      data-index={index}
       onClick={() => onSelect(probe)}
+      onFocus={onFocus}
+      onKeyDown={onKeyDown}
       ref={measure}
       style={style}
+      tabIndex={tabIndex}
       type="button"
     >
       <span className="probe-identity">
@@ -172,6 +197,9 @@ function ProbeRow({
           </span>
         )}
       </span>
+      <span className="sr-only">
+        第{index + 1}项，共{setSize}项
+      </span>
     </button>
   )
 }
@@ -191,8 +219,20 @@ export function ProbeEditorPane({
   const [internalSort, setInternalSort] = useState<ProbeSort | null>(
     defaultSort,
   )
+  const [focusedProbeId, setFocusedProbeId] = useState(selectedId)
   const sort = controlledSort ?? internalSort
-  const sortedProbes = sortWorkspaceProbes(probes, sort)
+  const sortKey = sort?.key ?? null
+  const sortDirection = sort?.direction ?? null
+  const sortedProbes = useMemo(
+    () =>
+      sortWorkspaceProbes(
+        probes,
+        sortKey && sortDirection
+          ? { key: sortKey, direction: sortDirection }
+          : null,
+      ),
+    [probes, sortDirection, sortKey],
+  )
   const listRef = useRef<HTMLDivElement>(null)
   const shouldVirtualize = sortedProbes.length > 100
   // TanStack Virtual owns mutable measurement state, so this component opts out of compiler memoization.
@@ -206,6 +246,10 @@ export function ProbeEditorPane({
   })
 
   useEffect(() => {
+    if (selectedId) setFocusedProbeId(selectedId)
+  }, [selectedId])
+
+  useEffect(() => {
     if (!shouldVirtualize) return
     const selectedIndex = sortedProbes.findIndex(
       (probe) => probe.id === selectedId,
@@ -214,6 +258,43 @@ export function ProbeEditorPane({
       virtualizer.scrollToIndex(selectedIndex, { align: 'auto' })
     }
   }, [selectedId, shouldVirtualize, sortedProbes, virtualizer])
+
+  const focusedIndex = sortedProbes.findIndex(
+    (probe) => probe.id === focusedProbeId,
+  )
+  const tabbableIndex = focusedIndex >= 0 ? focusedIndex : 0
+
+  const focusProbeAt = (index: number) => {
+    if (!sortedProbes.length) return
+    const nextIndex = Math.max(0, Math.min(index, sortedProbes.length - 1))
+    const nextProbe = sortedProbes[nextIndex]
+    if (!nextProbe) return
+
+    setFocusedProbeId(nextProbe.id)
+    if (shouldVirtualize) {
+      virtualizer.scrollToIndex(nextIndex, { align: 'auto' })
+    }
+    requestAnimationFrame(() => {
+      listRef.current
+        ?.querySelector<HTMLButtonElement>(`[data-index="${nextIndex}"]`)
+        ?.focus()
+    })
+  }
+
+  const handleRowKeyDown = (
+    event: KeyboardEvent<HTMLButtonElement>,
+    index: number,
+  ) => {
+    let nextIndex: number | null = null
+    if (event.key === 'ArrowDown') nextIndex = index + 1
+    if (event.key === 'ArrowUp') nextIndex = index - 1
+    if (event.key === 'Home') nextIndex = 0
+    if (event.key === 'End') nextIndex = sortedProbes.length - 1
+    if (nextIndex === null) return
+
+    event.preventDefault()
+    focusProbeAt(nextIndex)
+  }
 
   const changeSort = (key: ProbeSortKey) => {
     const next = nextProbeSort(sort, key)
@@ -283,29 +364,38 @@ export function ProbeEditorPane({
                 const probe = sortedProbes[row.index]
                 return probe ? (
                   <ProbeRow
+                    index={row.index}
                     key={probe.id}
                     measure={(element) => virtualizer.measureElement(element)}
+                    onFocus={() => setFocusedProbeId(probe.id)}
+                    onKeyDown={(event) => handleRowKeyDown(event, row.index)}
                     onSelect={onSelect}
                     probe={probe}
                     selected={selectedId === probe.id}
+                    setSize={sortedProbes.length}
                     style={{
                       position: 'absolute',
                       top: 0,
                       left: 0,
                       transform: `translateY(${row.start}px)`,
                     }}
-                    virtualIndex={row.index}
+                    tabIndex={row.index === tabbableIndex ? 0 : -1}
                   />
                 ) : null
               })}
             </div>
           ) : (
-            sortedProbes.map((probe) => (
+            sortedProbes.map((probe, index) => (
               <ProbeRow
+                index={index}
                 key={probe.id}
+                onFocus={() => setFocusedProbeId(probe.id)}
+                onKeyDown={(event) => handleRowKeyDown(event, index)}
                 onSelect={onSelect}
                 probe={probe}
                 selected={selectedId === probe.id}
+                setSize={sortedProbes.length}
+                tabIndex={index === tabbableIndex ? 0 : -1}
               />
             ))
           )

@@ -31,6 +31,16 @@ export const isPublicDataAccessDenied = (error: unknown) =>
   (error instanceof RpcResponseError &&
     (error.code === -32040 || error.code === -32041))
 
+export const shouldRecoverPublicDataAccess = (
+  accessScope: string,
+  recoveredScopes: ReadonlySet<string>,
+  error: unknown,
+) =>
+  accessScope !== 'pending' &&
+  accessScope !== 'blocked' &&
+  isPublicDataAccessDenied(error) &&
+  !recoveredScopes.has(accessScope)
+
 export async function revokePublicDataAccess(
   queryClient: QueryClient,
   client: KomariApiClient,
@@ -95,15 +105,18 @@ export const useNodesQuery = (
   client: KomariApiClient,
   bootstrap: BootstrapResult | undefined,
 ) => {
+  const pageVisible = usePageVisibility()
   const enabled = canReadPublicData(bootstrap)
   const queryKey = komariQueryKeys.nodes(client, bootstrap)
   const query = useQuery({
     queryKey,
     queryFn: ({ signal }) => client.listNodes({ signal }),
     enabled,
-    staleTime: 5 * 60_000,
+    staleTime: 60_000,
     retry: retryPublicRead,
-    refetchOnWindowFocus: false,
+    refetchInterval: enabled && pageVisible ? 60_000 : false,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
   })
   useCancelWhenDisabled(queryKey, enabled)
   return query

@@ -7,7 +7,6 @@ import {
 } from 'react-router-dom'
 import { AppearanceMenu, type ThemePreference } from '../../ui/AppearanceMenu'
 import { FilterIcon, MenuIcon, PanelIcon, SearchIcon } from '../../ui/Icons'
-import { demoProbes } from './demoData'
 import { InspectorPane } from './InspectorPane'
 import { NavigatorPane } from './NavigatorPane'
 import { ProbeEditorPane } from './ProbeEditorPane'
@@ -105,7 +104,7 @@ function initialPanelState(query: string) {
 }
 
 export interface ProbeWorkspaceProps {
-  probes?: ReadonlyArray<WorkspaceProbe>
+  probes: ReadonlyArray<WorkspaceProbe>
   defaultAppearance?: ThemePreference
   editorContent?: ReactNode
   footerLabel?: string
@@ -114,7 +113,7 @@ export interface ProbeWorkspaceProps {
 }
 
 export function ProbeWorkspace({
-  probes = demoProbes,
+  probes,
   defaultAppearance = 'system',
   editorContent,
   footerLabel = 'Powered by Komari Monitor.',
@@ -364,7 +363,7 @@ export function ProbeWorkspace({
             <div className="toolbar-popover">
               <button
                 aria-expanded={filterOpen}
-                aria-haspopup="menu"
+                aria-haspopup="dialog"
                 className={
                   connectionFilter !== 'all' || freshnessFilter !== 'all'
                     ? 'toolbar-button is-active'

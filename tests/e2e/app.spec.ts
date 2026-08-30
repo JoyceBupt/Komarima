@@ -57,6 +57,46 @@ test('loads history only after the detail action', async ({ page }) => {
   expect(
     mock.rpcMethods.filter((method) => method === 'public:queryMetrics').length,
   ).toBeLessThanOrEqual(3)
+
+  const firstPlot = page.locator('.uplot').first()
+  await expect(firstPlot).toBeVisible()
+  await firstPlot.evaluate((element) => {
+    ;(
+      window as typeof window & { __komarimaFirstPlot?: Element }
+    ).__komarimaFirstPlot = element
+  })
+  await page.waitForTimeout(1_200)
+  expect(
+    await firstPlot.evaluate(
+      (element) =>
+        element ===
+        (window as typeof window & { __komarimaFirstPlot?: Element })
+          .__komarimaFirstPlot,
+    ),
+  ).toBe(true)
+})
+
+test('refreshes node metadata every minute while visible', async ({ page }) => {
+  await page.clock.install({
+    time: new Date('2026-08-30T04:00:00Z'),
+  })
+  const mock = await mockKomari132(page)
+  await page.goto('/')
+  await expect(page.getByRole('heading', { name: '全部探针' })).toBeVisible()
+  expect(
+    mock.rpcMethods.filter((method) => method === 'public:getNodesInformation'),
+  ).toHaveLength(1)
+
+  await page.clock.fastForward(60_100)
+
+  await expect
+    .poll(
+      () =>
+        mock.rpcMethods.filter(
+          (method) => method === 'public:getNodesInformation',
+        ).length,
+    )
+    .toBe(2)
 })
 
 test('stops before RPC on an anonymous private site', async ({ page }) => {
@@ -70,6 +110,17 @@ test('stops before RPC on an anonymous private site', async ({ page }) => {
     '/admin',
   )
   expect(mock.rpcMethods).toEqual([])
+})
+
+test('bounds recovery when a public RPC remains denied', async ({ page }) => {
+  const mock = await mockKomari132(page, { rpcDenied: true })
+
+  await page.goto('/')
+  await expect(page.getByRole('heading', { name: '载入失败' })).toBeVisible()
+  await page.waitForTimeout(500)
+
+  expect(mock.rpcMethods).toHaveLength(2)
+  expect(mock.meRequests).toBeLessThanOrEqual(3)
 })
 
 test('drops hidden-node cache when an administrator signs out', async ({
@@ -176,6 +227,13 @@ test('traps and restores focus for the mobile inspector', async ({ page }) => {
   await page.keyboard.press('Escape')
   await expect(inspector).toHaveCount(0)
   await expect(probeRow).toBeFocused()
+
+  await probeRow.click()
+  await page.getByRole('link', { name: '详情' }).click()
+  await expect(page).toHaveURL(/view=history/)
+  await expect(inspector).toHaveCount(0)
+  await expect(page.getByText('探针历史')).toBeVisible()
+  await expect(page.getByRole('button', { name: '返回探针' })).toBeFocused()
 })
 
 test('keeps a 500-probe workspace bounded', async ({ page }) => {
@@ -193,6 +251,14 @@ test('keeps a 500-probe workspace bounded', async ({ page }) => {
     mock.rpcMethods.filter((method) => method === 'common:getNodesLatestStatus')
       .length,
   ).toBe(1)
+
+  const firstProbe = page.getByRole('button', { name: /Probe 0000/ })
+  await firstProbe.focus()
+  await page.keyboard.press('End')
+  await expect(page.getByRole('button', { name: /Probe 0499/ })).toBeFocused()
+  await expect(
+    page.getByRole('button', { name: /Probe 0499/ }),
+  ).toHaveAccessibleName(/第500项，共500项/)
 
   await page.getByRole('button', { name: '搜索' }).click()
   const filterStartedAt = Date.now()

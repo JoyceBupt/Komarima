@@ -14,6 +14,25 @@ function assert(condition, message) {
   }
 }
 
+function isValidSemVer(value) {
+  if (typeof value !== 'string') return false
+
+  const match =
+    /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/u.exec(
+      value,
+    )
+  if (!match) return false
+
+  return !match[1]
+    ?.split('.')
+    .some(
+      (identifier) =>
+        /^\d+$/u.test(identifier) &&
+        identifier.startsWith('0') &&
+        identifier.length > 1,
+    )
+}
+
 async function collectFiles(directory) {
   const entries = await readdir(directory, { withFileTypes: true })
   const files = []
@@ -61,9 +80,7 @@ async function validate() {
     'manifest.short cannot be default',
   )
   assert(
-    /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/u.test(
-      manifest.version,
-    ),
+    isValidSemVer(manifest.version),
     'manifest.version must be valid SemVer',
   )
   assert(

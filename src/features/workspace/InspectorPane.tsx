@@ -146,6 +146,7 @@ export function InspectorPane({
 
         <Link
           className="inspector-detail"
+          onClick={modal ? onClose : undefined}
           to={{
             pathname: `/instance/${probe.id}`,
             search: historySearch.toString(),

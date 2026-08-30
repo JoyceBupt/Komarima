@@ -1,7 +1,7 @@
 {
   "bomFormat": "CycloneDX",
   "specVersion": "1.6",
-  "serialNumber": "urn:uuid:7125d74a-642d-5ff8-ae27-6feb67f44f4d",
+  "serialNumber": "urn:uuid:71a28d2f-d104-5524-80e7-c1d1ffadd95d",
   "version": 1,
   "metadata": {
     "component": {
@@ -218,6 +218,30 @@
     },
     {
       "type": "library",
+      "bom-ref": "pkg:npm/tailwindcss@4.3.3",
+      "name": "tailwindcss",
+      "version": "4.3.3",
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "purl": "pkg:npm/tailwindcss@4.3.3",
+      "properties": [
+        {
+          "name": "komarima:release-role",
+          "value": "embedded-build-input"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://tailwindcss.com"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "bom-ref": "pkg:npm/uplot@1.6.32",
       "name": "uplot",
       "version": "1.6.32",
@@ -262,6 +286,7 @@
         "pkg:npm/react-dom@19.2.8",
         "pkg:npm/react-router-dom@7.18.3",
         "pkg:npm/react@19.2.8",
+        "pkg:npm/tailwindcss@4.3.3",
         "pkg:npm/uplot@1.6.32",
         "pkg:npm/zod@4.5.4"
       ]
@@ -327,6 +352,10 @@
     },
     {
       "ref": "pkg:npm/set-cookie-parser@2.7.2",
+      "dependsOn": []
+    },
+    {
+      "ref": "pkg:npm/tailwindcss@4.3.3",
       "dependsOn": []
     },
     {

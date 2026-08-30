@@ -79,7 +79,18 @@ export const latestStatusSchema = z
   })
   .passthrough()
 
-export const latestStatusMapSchema = z.record(z.string(), latestStatusSchema)
+export const latestStatusMapSchema = z
+  .record(z.string(), latestStatusSchema)
+  .superRefine((statuses, context) => {
+    for (const [uuid, status] of Object.entries(statuses)) {
+      if (status.client === uuid) continue
+      context.addIssue({
+        code: 'custom',
+        message: `Latest status key ${uuid} does not match client ${status.client}`,
+        path: [uuid, 'client'],
+      })
+    }
+  })
 
 export const latestStatusParamsSchema = z
   .object({

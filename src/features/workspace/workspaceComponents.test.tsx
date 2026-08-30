@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
+import { InspectorPane } from './InspectorPane'
 import { NavigatorPane } from './NavigatorPane'
 import { ProbeEditorPane } from './ProbeEditorPane'
 import type { WorkspaceProbe } from './types'
@@ -82,6 +84,22 @@ describe('NavigatorPane', () => {
   })
 })
 
+describe('InspectorPane', () => {
+  it('closes a modal inspector before opening history', async () => {
+    const user = userEvent.setup()
+    const onClose = vi.fn()
+
+    render(
+      <MemoryRouter initialEntries={['/instance/one']}>
+        <InspectorPane isOpen modal onClose={onClose} probe={probe('one')} />
+      </MemoryRouter>,
+    )
+
+    await user.click(screen.getByRole('link', { name: '详情' }))
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+})
+
 describe('ProbeEditorPane', () => {
   it('distinguishes an empty site from a filtered result', () => {
     const { rerender } = render(
@@ -130,6 +148,7 @@ describe('ProbeEditorPane', () => {
     )
 
     await user.click(cpuSort)
+    expect(cpuSort).toHaveAccessibleName('CPU，当前降序，切换为升序')
     expect(cpuSort).toHaveAttribute('data-sort-direction', 'descending')
     expect(onSortChange).toHaveBeenLastCalledWith({
       key: 'cpu',
@@ -168,5 +187,32 @@ describe('ProbeEditorPane', () => {
     expect(
       screen.getByRole('button', { name: /invalid.*时间无效/ }),
     ).toBeInTheDocument()
+  })
+
+  it('uses one tab stop and supports arrow, Home, and End navigation', async () => {
+    const user = userEvent.setup()
+    render(
+      <ProbeEditorPane
+        onSelect={vi.fn()}
+        probes={[probe('first'), probe('second'), probe('third')]}
+        selectedId="first"
+      />,
+    )
+
+    const rows = within(
+      screen.getByRole('group', { name: '探针列表' }),
+    ).getAllByRole('button')
+    expect(rows.map((row) => row.tabIndex)).toEqual([0, -1, -1])
+    expect(rows[2]).toHaveAccessibleName(/第3项，共3项/)
+
+    rows[0]?.focus()
+    await user.keyboard('{ArrowDown}')
+    await vi.waitFor(() => expect(rows[1]).toHaveFocus())
+
+    await user.keyboard('{End}')
+    await vi.waitFor(() => expect(rows[2]).toHaveFocus())
+
+    await user.keyboard('{Home}')
+    await vi.waitFor(() => expect(rows[0]).toHaveFocus())
   })
 })

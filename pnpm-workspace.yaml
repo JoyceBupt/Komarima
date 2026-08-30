@@ -1,6 +1,5 @@
 packages:
   - .
-allowBuilds:
-  msw: true
+autoInstallPeers: false
 minimumReleaseAgeExclude:
   - zod@4.5.4

@@ -92,6 +92,8 @@ describe('HistoryDetailView', () => {
       .closest('.history-summary')
     if (!(cpuSummary instanceof HTMLElement))
       throw new Error('CPU summary was not rendered')
+    expect(within(cpuSummary).getByText('3 样本')).toBeInTheDocument()
+    expect(within(cpuSummary).getAllByText(/覆盖/)).toHaveLength(1)
     expect(within(cpuSummary).getByText('20.7%')).toBeInTheDocument()
     expect(within(cpuSummary).getByText('37.5%')).toBeInTheDocument()
     expect(within(cpuSummary).getByText('5')).toBeInTheDocument()

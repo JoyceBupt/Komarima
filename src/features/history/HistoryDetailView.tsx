@@ -81,9 +81,7 @@ function MetricSummary({
     series.type === 'counter'
       ? '累计值'
       : formatMetricValue(stats.average, series.unit)
-  const sampleLabel = `${stats.sampleCount} 样本 · 覆盖 ${formatCoverage(
-    stats.coveragePercent,
-  )}`
+  const sampleLabel = `${stats.sampleCount} 样本`
 
   return (
     <div
