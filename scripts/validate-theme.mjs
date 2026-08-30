@@ -7,6 +7,11 @@ const manifestPath = resolve(root, 'komari-theme.json')
 const packagePath = resolve(root, 'package.json')
 const previewPath = resolve(root, 'preview.png')
 const indexPath = resolve(root, 'dist/index.html')
+const previewOnlyMarkers = [
+  'KOMARIMA_PREVIEW_SCENARIO',
+  'komarima-ui-preview',
+  'node-never-reported',
+]
 
 function assert(condition, message) {
   if (!condition) {
@@ -137,6 +142,9 @@ async function validate() {
         !/(?:src|href)=["']https?:\/\//u.test(content),
         `${file} contains a remote asset`,
       )
+      for (const marker of previewOnlyMarkers) {
+        assert(!content.includes(marker), `${file} contains preview-only data`)
+      }
     }
   }
 

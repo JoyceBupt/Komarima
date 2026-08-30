@@ -12,6 +12,7 @@
   },
   "scripts": {
     "dev": "vite",
+    "preview:ui": "vite --mode ui-preview",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "typecheck": "tsc -b --pretty false",
