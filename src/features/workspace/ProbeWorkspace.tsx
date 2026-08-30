@@ -135,7 +135,9 @@ export function ProbeWorkspace({
     initialPanelState('(min-width: 1100px)'),
   )
   const [inspectorOpen, setInspectorOpen] = useState(
-    () => Boolean(uuid) || initialPanelState('(min-width: 1440px)'),
+    () =>
+      (Boolean(uuid) && searchParams.get('view') !== 'history') ||
+      initialPanelState('(min-width: 1440px)'),
   )
   const [navigatorDocked, setNavigatorDocked] = useState(() =>
     initialPanelState('(min-width: 1100px)'),
@@ -155,13 +157,21 @@ export function ProbeWorkspace({
       setInspectorDocked(event.matches)
       setInspectorOpen(event.matches)
     }
+    const closeInspectorOnHistoryNavigation = () => {
+      const view = new URLSearchParams(window.location.search).get('view')
+      if (view === 'history' && !inspectorMedia?.matches) {
+        setInspectorOpen(false)
+      }
+    }
 
     navigatorMedia?.addEventListener('change', updateNavigator)
     inspectorMedia?.addEventListener('change', updateInspector)
+    window.addEventListener('popstate', closeInspectorOnHistoryNavigation)
 
     return () => {
       navigatorMedia?.removeEventListener('change', updateNavigator)
       inspectorMedia?.removeEventListener('change', updateInspector)
+      window.removeEventListener('popstate', closeInspectorOnHistoryNavigation)
     }
   }, [])
 

@@ -31,6 +31,11 @@ import './HistoryDetail.css'
 const LazyUPlotChart = lazy(() =>
   import('./UPlotChart').then((module) => ({ default: module.UPlotChart })),
 )
+const LazyPingProbeChart = lazy(() =>
+  import('./PingProbeChart').then((module) => ({
+    default: module.PingProbeChart,
+  })),
+)
 
 interface HistoryDetailBaseProps {
   nodeName: string
@@ -191,6 +196,12 @@ export function HistoryDetailView({
   )
   const hasData = hasFiniteMetricData(visibleSeries)
   const actualCoverage = timeCoverage(visibleSeries)
+  const pingSeries = visibleSeries.filter(
+    (metric) => metric.metricKey === 'ping.latency_ms',
+  )
+  const standardSeries = visibleSeries.filter(
+    (metric) => metric.metricKey !== 'ping.latency_ms',
+  )
   const titleId = `history-title-${instanceId}`
   const overviewTabId = `history-overview-tab-${instanceId}`
   const overviewPanelId = `history-overview-panel-${instanceId}`
@@ -343,7 +354,28 @@ export function HistoryDetailView({
         {view === 'history' ? renderState() : null}
         {view === 'history' && state === 'ready' && hasData ? (
           <div className="history-chart-list">
-            {visibleSeries.map((metric) => {
+            {pingSeries.length ? (
+              <Suspense
+                fallback={
+                  <div
+                    aria-live="polite"
+                    className="history-chart-loading history-chart-card"
+                    role="status"
+                  >
+                    加载图表
+                  </div>
+                }
+              >
+                <LazyPingProbeChart
+                  key={`ping:${activeRange}:${
+                    actualCoverage?.startTimeMs ?? 0
+                  }:${actualCoverage?.endTimeMs ?? 0}`}
+                  metricLabels={metricLabels}
+                  series={pingSeries}
+                />
+              </Suspense>
+            ) : null}
+            {standardSeries.map((metric) => {
               const identity = seriesIdentity(metric)
               const label = metricSeriesLabel(metric, metricLabels)
               const stats = metricStats(metric)

@@ -22,6 +22,7 @@ import {
   useLatestStatusesQuery,
   useMetricQuery,
   useNodesQuery,
+  usePingMetricQueries,
   usePingMetricStatsQuery,
   retryPublicRead,
 } from './hooks'
@@ -404,6 +405,183 @@ describe('on-demand history queries', () => {
     expect(api.getPingMetricStats).not.toHaveBeenCalled()
     rerender({ access: publicBootstrap, active: true })
     await waitFor(() => expect(api.getPingMetricStats).toHaveBeenCalledTimes(1))
+  })
+
+  it('queries each selected Ping task in parallel and aggregates its series', async () => {
+    const api = createMockClient()
+    vi.mocked(api.queryMetrics).mockImplementation(async (params) => ({
+      start: '2026-08-30T03:00:00Z',
+      end: '2026-08-30T04:00:00Z',
+      server_downsample_default: true,
+      default_points: 500,
+      series: [
+        {
+          metric_key: 'ping.latency_ms',
+          entity_id: params.entity_id!,
+          type: 'gauge',
+          unit: 'ms',
+          downsampled: false,
+          count: 1,
+          points: [{ time: '2026-08-30T04:00:00Z', value: 18 }],
+        },
+      ],
+      count: 1,
+    }))
+    const requests = [11, 7].map((taskId) => ({
+      metric_key: 'ping.latency_ms',
+      entity_id: 'node-a',
+      tags: { task_id: String(taskId) },
+      hours: 1,
+      max_points: 240,
+    }))
+    const { wrapper } = createWrapper()
+    const { result, rerender } = renderHook(
+      () => usePingMetricQueries(api, publicBootstrap, requests, true),
+      { wrapper },
+    )
+
+    await waitFor(() => expect(result.current.isPending).toBe(false))
+    expect(api.queryMetrics).toHaveBeenCalledTimes(2)
+    expect(
+      vi
+        .mocked(api.queryMetrics)
+        .mock.calls.map(([params]) => params.tags?.task_id),
+    ).toEqual(['11', '7'])
+    expect(result.current.series.map((series) => series.tags?.task_id)).toEqual(
+      ['11', '7'],
+    )
+    const stableSeries = result.current.series
+    rerender()
+    expect(result.current.series).toBe(stableSeries)
+
+    await act(async () => {
+      await result.current.refetch()
+    })
+    expect(api.queryMetrics).toHaveBeenCalledTimes(4)
+  })
+
+  it('does not query disabled Ping tasks and aborts them when disabled', async () => {
+    const api = createMockClient()
+    const observedSignals: AbortSignal[] = []
+    vi.mocked(api.queryMetrics).mockImplementation(
+      (_params, options) =>
+        new Promise((_resolve, reject) => {
+          const signal = options?.signal
+          if (!signal) return
+          observedSignals.push(signal)
+          signal.addEventListener('abort', () => reject(signal.reason), {
+            once: true,
+          })
+        }),
+    )
+    const requests = [3, 4].map((taskId) => ({
+      metric_key: 'ping.latency_ms',
+      entity_id: 'node-a',
+      tags: { task_id: String(taskId) },
+      hours: 1,
+      max_points: 240,
+    }))
+    const { wrapper } = createWrapper()
+    const { rerender } = renderHook(
+      ({ active }: { active: boolean }) =>
+        usePingMetricQueries(api, publicBootstrap, requests, active),
+      { wrapper, initialProps: { active: false } },
+    )
+
+    await act(async () => Promise.resolve())
+    expect(api.queryMetrics).not.toHaveBeenCalled()
+
+    rerender({ active: true })
+    await waitFor(() => expect(api.queryMetrics).toHaveBeenCalledTimes(2))
+    rerender({ active: false })
+    await waitFor(() =>
+      expect(observedSignals.every((signal) => signal.aborted)).toBe(true),
+    )
+  })
+
+  it('keeps parallel Ping history behind the public-data gate', async () => {
+    const api = createMockClient()
+    const requests = [
+      {
+        metric_key: 'ping.latency_ms',
+        entity_id: 'node-a',
+        tags: { task_id: '8' },
+        hours: 1,
+        max_points: 240,
+      },
+    ]
+    const { wrapper } = createWrapper()
+    const { rerender } = renderHook(
+      ({ access }: { access: BootstrapResult }) =>
+        usePingMetricQueries(api, access, requests, true),
+      {
+        wrapper,
+        initialProps: { access: privateBootstrap as BootstrapResult },
+      },
+    )
+
+    await act(async () => Promise.resolve())
+    expect(api.queryMetrics).not.toHaveBeenCalled()
+    rerender({ access: publicBootstrap })
+    await waitFor(() => expect(api.queryMetrics).toHaveBeenCalledTimes(1))
+  })
+
+  it('surfaces an access denial from any parallel Ping request', async () => {
+    const api = createMockClient()
+    const denial = new HttpError(403, 'denied', {})
+    vi.mocked(api.queryMetrics).mockImplementation(async (params) => {
+      if (params.tags?.task_id === '9') throw denial
+      return {
+        start: '2026-08-30T03:00:00Z',
+        end: '2026-08-30T04:00:00Z',
+        server_downsample_default: true,
+        default_points: 500,
+        series: [],
+        count: 0,
+      }
+    })
+    const requests = [8, 9].map((taskId) => ({
+      metric_key: 'ping.latency_ms',
+      entity_id: 'node-a',
+      tags: { task_id: String(taskId) },
+      hours: 1,
+      max_points: 240,
+    }))
+    const { wrapper } = createWrapper()
+    const { result } = renderHook(
+      () => usePingMetricQueries(api, publicBootstrap, requests, true),
+      { wrapper },
+    )
+
+    await waitFor(() => expect(result.current.isError).toBe(true))
+    expect(result.current.error).toBe(denial)
+    expect(isPublicDataAccessDenied(result.current.error)).toBe(true)
+  })
+
+  it('prioritizes an access denial over another parallel Ping failure', async () => {
+    const api = createMockClient()
+    const serverFailure = new HttpError(500, 'server error', {})
+    const denial = new HttpError(403, 'denied', {})
+    vi.mocked(api.queryMetrics).mockImplementation(async (params) => {
+      if (params.tags?.task_id === '8') throw serverFailure
+      throw denial
+    })
+    const requests = [8, 9].map((taskId) => ({
+      metric_key: 'ping.latency_ms',
+      entity_id: 'node-a',
+      tags: { task_id: String(taskId) },
+      hours: 1,
+      max_points: 240,
+    }))
+    const { wrapper } = createWrapper()
+    const { result } = renderHook(
+      () => usePingMetricQueries(api, publicBootstrap, requests, true),
+      { wrapper },
+    )
+
+    await waitFor(() => expect(result.current.isError).toBe(true))
+    expect(result.current.error).toBe(denial)
+    expect(isPublicDataAccessDenied(result.current.error)).toBe(true)
   })
 })
 

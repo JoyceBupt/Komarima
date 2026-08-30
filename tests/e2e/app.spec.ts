@@ -53,21 +53,26 @@ test('loads history only after the detail action', async ({ page }) => {
         mock.rpcMethods.filter((method) => method === 'public:queryMetrics')
           .length,
     )
-    .toBeGreaterThanOrEqual(2)
-  expect(
-    mock.rpcMethods.filter((method) => method === 'public:queryMetrics').length,
-  ).toBeLessThanOrEqual(3)
+    .toBe(4)
 
-  const firstPlot = page.locator('.uplot').first()
-  await expect(firstPlot).toBeVisible()
-  await firstPlot.evaluate((element) => {
+  const pingCard = page.locator('.history-ping-card')
+  await expect(pingCard).toBeVisible()
+  await expect(
+    pingCard.getByRole('heading', { name: 'Ping 延迟' }),
+  ).toBeVisible()
+  await expect(pingCard.getByText('东京 NTT', { exact: true })).toBeVisible()
+  await expect(pingCard.getByText('新加坡 CMI', { exact: true })).toBeVisible()
+  const pingPlot = pingCard.locator('.uplot')
+  await expect(pingPlot).toBeVisible()
+  await expect(page.locator('.uplot')).toHaveCount(6)
+  await pingPlot.evaluate((element) => {
     ;(
       window as typeof window & { __komarimaFirstPlot?: Element }
     ).__komarimaFirstPlot = element
   })
   await page.waitForTimeout(1_200)
   expect(
-    await firstPlot.evaluate(
+    await pingPlot.evaluate(
       (element) =>
         element ===
         (window as typeof window & { __komarimaFirstPlot?: Element })
@@ -179,7 +184,7 @@ test('ignores default-on Ping tasks not assigned to the probe', async ({
           .length,
     )
     .toBe(2)
-  await expect(page.getByRole('heading', { name: /Ping 延迟/ })).toHaveCount(0)
+  await expect(page.locator('.history-ping-card')).toHaveCount(0)
 })
 
 test('reports Ping task failures as history errors', async ({ page }) => {
@@ -234,6 +239,28 @@ test('traps and restores focus for the mobile inspector', async ({ page }) => {
   await expect(inspector).toHaveCount(0)
   await expect(page.getByText('探针历史')).toBeVisible()
   await expect(page.getByRole('button', { name: '返回探针' })).toBeFocused()
+  await expect(page.locator('.history-ping-card .uplot')).toBeVisible()
+  expect(
+    await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth -
+        document.documentElement.clientWidth,
+    ),
+  ).toBeLessThanOrEqual(1)
+
+  await page.reload()
+  await expect(inspector).toHaveCount(0)
+  await expect(page.locator('.history-ping-card .uplot')).toBeVisible()
+
+  await page.goBack()
+  await expect(page).not.toHaveURL(/view=history/)
+  await page.getByRole('button', { name: '切换检查器' }).click()
+  await expect(inspector).toBeVisible()
+
+  await page.goForward()
+  await expect(page).toHaveURL(/view=history/)
+  await expect(inspector).toHaveCount(0)
+  await expect(page.locator('.history-ping-card .uplot')).toBeVisible()
 })
 
 test('keeps a 500-probe workspace bounded', async ({ page }) => {

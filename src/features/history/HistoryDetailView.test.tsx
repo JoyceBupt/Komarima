@@ -16,6 +16,16 @@ vi.mock('./UPlotChart', () => ({
   ),
 }))
 
+vi.mock('./PingProbeChart', () => ({
+  PingProbeChart: ({
+    series,
+  }: {
+    series: ReadonlyArray<NormalizedMetricSeries>
+  }) => (
+    <div data-series-count={series.length} data-testid="combined-ping-chart" />
+  ),
+}))
+
 afterEach(cleanup)
 
 const hourMs = 60 * 60 * 1_000
@@ -153,14 +163,14 @@ describe('HistoryDetailView', () => {
     )
   })
 
-  it('keeps multiple tagged Ping series distinct', async () => {
+  it('keeps tagged Ping summaries distinct and consolidates their charts first', async () => {
     const user = userEvent.setup()
     render(
       <HistoryDetailView
         defaultRange="1h"
         endTimeMs={endTimeMs}
         nodeName="东京 Web 01"
-        series={[pingSeries('7'), pingSeries('8')]}
+        series={[cpuSeries, pingSeries('7'), pingSeries('8')]}
       />,
     )
 
@@ -171,12 +181,33 @@ describe('HistoryDetailView', () => {
       screen.getByRole('heading', { name: 'Ping 延迟 · 任务 8' }),
     ).toBeInTheDocument()
     await user.click(screen.getByRole('tab', { name: '历史' }))
+    const combinedPingChart = await screen.findByTestId('combined-ping-chart')
+    expect(combinedPingChart).toHaveAttribute('data-series-count', '2')
+    expect(combinedPingChart.parentElement).toHaveClass('history-chart-list')
+    expect(combinedPingChart.parentElement?.firstElementChild).toBe(
+      combinedPingChart,
+    )
     expect(
-      await screen.findByTestId('chart-ping.latency_ms-7'),
-    ).toBeInTheDocument()
+      screen.queryByTestId('chart-ping.latency_ms-7'),
+    ).not.toBeInTheDocument()
     expect(
-      await screen.findByTestId('chart-ping.latency_ms-8'),
-    ).toBeInTheDocument()
+      screen.queryByTestId('chart-ping.latency_ms-8'),
+    ).not.toBeInTheDocument()
+    expect(screen.getByTestId('chart-cpu.usage-default')).toBeInTheDocument()
+  })
+
+  it('does not add a Ping card when Ping history is absent', async () => {
+    const user = userEvent.setup()
+    render(
+      <HistoryDetailView
+        endTimeMs={endTimeMs}
+        nodeName="东京 Web 01"
+        series={[cpuSeries]}
+      />,
+    )
+
+    await user.click(screen.getByRole('tab', { name: '历史' }))
+    expect(screen.queryByTestId('combined-ping-chart')).not.toBeInTheDocument()
   })
 
   it('implements roving tabs and keeps both controlled panels mounted', async () => {

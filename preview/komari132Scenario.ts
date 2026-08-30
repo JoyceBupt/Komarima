@@ -58,13 +58,34 @@ const pingTasks = [
   {
     id: 8,
     weight: 1,
-    name: 'Tokyo ICMP',
+    name: '东京 NTT',
+    clients: ['node-online'],
+    default_on: true,
+    type: 'icmp',
+    interval: 60,
+  },
+  {
+    id: 12,
+    weight: 2,
+    name: '新加坡 CMI',
     clients: ['node-online'],
     default_on: true,
     type: 'icmp',
     interval: 60,
   },
 ]
+
+const pingProfiles: Record<
+  string,
+  {
+    baseline: number
+    amplitude: number
+    phase: number
+  }
+> = {
+  '8': { baseline: 19, amplitude: 4.2, phase: 0.35 },
+  '12': { baseline: 43, amplitude: 7.5, phase: 2.1 },
+}
 
 const metricSpecs = {
   'cpu.usage': ['%', 28, 16],
@@ -122,6 +143,35 @@ const requestedMetricKeys = (params: Record<string, unknown> | undefined) => {
 const finiteNumber = (value: unknown) =>
   typeof value === 'number' && Number.isFinite(value) ? value : undefined
 
+const positiveModulo = (value: number, divisor: number) =>
+  ((value % divisor) + divisor) % divisor
+
+const taskSeed = (taskId: string) =>
+  [...taskId].reduce(
+    (seed, character) => seed * 31 + character.charCodeAt(0),
+    7,
+  )
+
+function pingValue(taskId: string, timestampMs: number) {
+  const seed = taskSeed(taskId)
+  const fallback = {
+    baseline: 18 + positiveModulo(seed, 36),
+    amplitude: 3 + positiveModulo(seed, 7),
+    phase: positiveModulo(seed, 19) / 3,
+  }
+  const profile = pingProfiles[taskId] ?? fallback
+  const epochMinute = timestampMs / 60_000
+  const slowWave =
+    Math.sin(epochMinute / 19 + profile.phase) * profile.amplitude
+  const fastWave =
+    Math.cos(epochMinute / 7 + profile.phase * 1.7) * profile.amplitude * 0.28
+  const spike =
+    positiveModulo(Math.floor(epochMinute) + seed, 47) === 0
+      ? profile.amplitude * 1.8
+      : 0
+  return Math.max(1, profile.baseline + slowWave + fastWave + spike)
+}
+
 function queryWindow(
   params: Record<string, unknown> | undefined,
   now: (() => Date) | undefined,
@@ -154,16 +204,25 @@ function createMetricSeries(
   const desiredPoints = Math.max(2, Math.ceil(rangeHours * 4) + 1)
   const pointCount = Math.min(maxPoints, desiredPoints)
   const tags = metricKey === 'ping.latency_ms' ? { task_id: taskId } : undefined
+  const missingIndex =
+    tags && pointCount >= 5
+      ? 1 +
+        positiveModulo(
+          taskSeed(taskId) + Math.floor(start.getTime() / 3_600_000),
+          pointCount - 2,
+        )
+      : Math.floor(pointCount / 2)
   const points = Array.from({ length: pointCount }, (_, index) => {
     const ratio = pointCount <= 1 ? 0 : index / (pointCount - 1)
-    const missing = pointCount >= 5 && index === Math.floor(pointCount / 2)
+    const timestampMs = Math.round(start.getTime() + rangeMs * ratio)
+    const missing = pointCount >= 5 && index === missingIndex
+    const value =
+      metricKey === 'ping.latency_ms'
+        ? pingValue(taskId, timestampMs)
+        : spec[1] + Math.sin(ratio * Math.PI * 2) * spec[2]
     return {
-      time: new Date(start.getTime() + rangeMs * ratio).toISOString(),
-      value: missing
-        ? null
-        : Math.round(
-            (spec[1] + Math.sin(ratio * Math.PI * 2) * spec[2]) * 100,
-          ) / 100,
+      time: new Date(timestampMs).toISOString(),
+      value: missing ? null : Math.round(value * 100) / 100,
       ...(missing ? {} : { count: 1 }),
       ...(tags ? { tags } : {}),
     }

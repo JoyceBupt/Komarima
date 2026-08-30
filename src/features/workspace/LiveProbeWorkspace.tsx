@@ -12,6 +12,7 @@ import {
   KomariApiClient,
   isPublicDataAccessDenied,
   komariQueryKeys,
+  P0_MAX_PING_TASKS_PER_QUERY,
   publicDataAccessScope,
   revokePublicDataAccess,
   settingsFromBootstrap,
@@ -20,11 +21,13 @@ import {
   useLatestStatusesQuery,
   useMetricQuery,
   useNodesQuery,
+  usePingMetricQueries,
   usePingTasksQuery,
 } from '../../api'
 import { normalizeMetricSeries } from '../../domain'
 import {
   HistoryDetailView,
+  seriesIdentity,
   type HistoryLoadState,
   type HistoryRange,
 } from '../history'
@@ -157,22 +160,37 @@ export function LiveProbeWorkspace({
     bootstrapQuery.data,
     historyActive,
   )
-  const pingTask = pingTasks.data
-    ?.filter(
-      (task) =>
-        Boolean(selectedNode) && task.clients.includes(selectedNode!.uuid),
-    )
-    .sort((left, right) => left.weight - right.weight || left.id - right.id)[0]
-  const pingHistory = useMetricQuery(
+  const selectedNodeId = selectedNode?.uuid
+  const selectedPingTasks = useMemo(() => {
+    if (!selectedNodeId) return []
+    const seenTaskIds = new Set<number>()
+    return (pingTasks.data ?? [])
+      .filter((task) => task.clients.includes(selectedNodeId))
+      .sort((left, right) => left.weight - right.weight || left.id - right.id)
+      .filter((task) => {
+        if (seenTaskIds.has(task.id)) return false
+        seenTaskIds.add(task.id)
+        return true
+      })
+      .slice(0, P0_MAX_PING_TASKS_PER_QUERY)
+  }, [pingTasks.data, selectedNodeId])
+  const pingHistoryParams = useMemo(
+    () =>
+      selectedNodeId
+        ? selectedPingTasks.map((task) => ({
+            entity_id: selectedNodeId,
+            hours: historyHours[historyRange],
+            max_points: 240,
+            metric_key: 'ping.latency_ms',
+            tags: { task_id: String(task.id) },
+          }))
+        : [],
+    [historyRange, selectedNodeId, selectedPingTasks],
+  )
+  const pingHistory = usePingMetricQueries(
     client,
     bootstrapQuery.data,
-    historyBase && pingTask
-      ? {
-          ...historyBase,
-          metric_key: 'ping.latency_ms',
-          tags: { task_id: String(pingTask.id) },
-        }
-      : null,
+    pingHistoryParams,
     historyActive && resourceHistory.isSuccess && networkHistory.isSuccess,
   )
   const accessScope = publicDataAccessScope(bootstrapQuery.data)
@@ -194,15 +212,34 @@ export function LiveProbeWorkspace({
     recoveredAccessScopes,
     accessError,
   )
-  const historySeries = useMemo(
-    () =>
-      [
+  const historyPresentation = useMemo(() => {
+    const pingTaskNames = new Map(
+      selectedPingTasks.map((task) => [String(task.id), task.name]),
+    )
+    const pingSeries = pingHistory.series.map(normalizeMetricSeries)
+    const metricLabels = Object.fromEntries(
+      pingSeries.flatMap((series) => {
+        const label = pingTaskNames.get(series.tags.task_id)
+        if (!label) return []
+        return [[seriesIdentity(series), label]]
+      }),
+    )
+
+    return {
+      series: [
         ...(resourceHistory.data?.series ?? []),
         ...(networkHistory.data?.series ?? []),
-        ...(pingHistory.data?.series ?? []),
-      ].map(normalizeMetricSeries),
-    [networkHistory.data, pingHistory.data, resourceHistory.data],
-  )
+      ]
+        .map(normalizeMetricSeries)
+        .concat(pingSeries),
+      metricLabels,
+    }
+  }, [
+    networkHistory.data,
+    pingHistory.series,
+    resourceHistory.data,
+    selectedPingTasks,
+  ])
   const historyState: HistoryLoadState =
     resourceHistory.isError ||
     networkHistory.isError ||
@@ -212,7 +249,7 @@ export function LiveProbeWorkspace({
       : resourceHistory.isPending ||
           networkHistory.isPending ||
           pingTasks.isPending ||
-          (Boolean(pingTask) && pingHistory.isPending)
+          (selectedPingTasks.length > 0 && pingHistory.isPending)
         ? 'loading'
         : 'ready'
   const closeHistory = useCallback(() => {
@@ -238,13 +275,13 @@ export function LiveProbeWorkspace({
     void refetchResourceHistory()
     void refetchNetworkHistory()
     void refetchPingTasks()
-    if (pingTask) void refetchPingHistory()
+    if (selectedPingTasks.length > 0) void refetchPingHistory()
   }, [
-    pingTask,
     refetchNetworkHistory,
     refetchPingHistory,
     refetchPingTasks,
     refetchResourceHistory,
+    selectedPingTasks.length,
   ])
   const historyContent = useMemo(
     () =>
@@ -259,10 +296,11 @@ export function LiveProbeWorkspace({
             defaultView="history"
             errorMessage="历史暂不可用"
             nodeName={selectedNode.name}
+            metricLabels={historyPresentation.metricLabels}
             onRangeChange={changeHistoryRange}
             onRetry={retryHistory}
             range={historyRange}
-            series={historySeries}
+            series={historyPresentation.series}
             state={historyState}
           />
         </section>
@@ -272,7 +310,7 @@ export function LiveProbeWorkspace({
       closeHistory,
       historyActive,
       historyRange,
-      historySeries,
+      historyPresentation,
       historyState,
       retryHistory,
       selectedNode,

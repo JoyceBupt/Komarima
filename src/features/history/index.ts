@@ -3,6 +3,7 @@ export {
   type HistoryDetailViewProps,
 } from './HistoryDetailView'
 export {
+  seriesIdentity,
   type HistoryLoadState,
   type HistoryRange,
   type HistoryRangeRequest,

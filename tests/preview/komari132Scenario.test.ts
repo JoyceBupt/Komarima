@@ -266,6 +266,7 @@ describe('Komari 1.3.2 preview scenario', () => {
     expect(ping?.points.every((point) => point.tags?.task_id === '8')).toBe(
       true,
     )
+    expect(ping?.points.some((point) => point.value === null)).toBe(true)
 
     const capped = resultFrom(
       scenario.handleRpc({
@@ -345,8 +346,11 @@ describe('Komari 1.3.2 preview scenario', () => {
           method: 'public:getPublicPingTasks',
         }),
         publicPingTasksSchema,
-      )[0],
-    ).toMatchObject({ default_on: true, clients: [] })
+      ),
+    ).toEqual([
+      expect.objectContaining({ id: 8, default_on: true, clients: [] }),
+      expect.objectContaining({ id: 12, default_on: true, clients: [] }),
+    ])
     expect(() => createKomari132Scenario({ nodeCount: 0 })).toThrow('1 to 500')
     expect(() => createKomari132Scenario({ nodeCount: 501 })).toThrow(
       '1 to 500',
@@ -383,7 +387,64 @@ describe('Komari 1.3.2 preview scenario', () => {
         max_points: 120,
       }),
     ).resolves.toMatchObject({ count: 3 })
-    await expect(client.listPingTasks()).resolves.toHaveLength(1)
+    await expect(client.listPingTasks()).resolves.toHaveLength(2)
+  })
+
+  it('serves two assigned Ping lines with deterministic distinct waveforms', () => {
+    let currentTime = new Date('2027-02-03T12:00:00Z')
+    const scenario = createKomari132Scenario({
+      now: () => new Date(currentTime),
+    })
+    const tasks = resultFrom(
+      scenario.handleRpc({
+        id: 'ping-tasks',
+        method: 'public:getPublicPingTasks',
+      }),
+      publicPingTasksSchema,
+    )
+
+    expect(tasks).toMatchObject([
+      { id: 8, name: '东京 NTT', clients: ['node-online'] },
+      { id: 12, name: '新加坡 CMI', clients: ['node-online'] },
+    ])
+
+    const queryPing = (taskId: number, id: string) =>
+      resultFrom(
+        scenario.handleRpc({
+          id,
+          method: 'public:queryMetrics',
+          params: {
+            metric_key: 'ping.latency_ms',
+            entity_id: 'node-online',
+            tags: { task_id: String(taskId) },
+            hours: 24,
+            max_points: 120,
+          },
+        }),
+        metricQueryResultSchema,
+      ).series[0]!
+
+    const tokyo = queryPing(8, 'tokyo')
+    const singapore = queryPing(12, 'singapore')
+    expect(tokyo.tags).toEqual({ task_id: '8' })
+    expect(singapore.tags).toEqual({ task_id: '12' })
+    expect(tokyo.points.every((point) => point.tags?.task_id === '8')).toBe(
+      true,
+    )
+    expect(
+      singapore.points.every((point) => point.tags?.task_id === '12'),
+    ).toBe(true)
+    expect(tokyo.points.some((point) => point.value === null)).toBe(true)
+    expect(singapore.points.some((point) => point.value === null)).toBe(true)
+    expect(tokyo.points.map((point) => point.value)).not.toEqual(
+      singapore.points.map((point) => point.value),
+    )
+    expect(queryPing(8, 'tokyo-repeat')).toEqual(tokyo)
+
+    currentTime = new Date('2027-02-03T13:00:00Z')
+    expect(
+      queryPing(8, 'tokyo-next-window').points.map((point) => point.value),
+    ).not.toEqual(tokyo.points.map((point) => point.value))
   })
 
   it('rejects history windows beyond the public query policy', () => {
@@ -402,5 +463,25 @@ describe('Komari 1.3.2 preview scenario', () => {
     })
 
     expect(rpcFailureSchema.parse(response.body).error.code).toBe(-32602)
+
+    const boundary = resultFrom(
+      scenario.handleRpc({
+        id: 2,
+        method: 'public:queryMetrics',
+        params: {
+          metric_key: 'ping.latency_ms',
+          entity_id: 'node-online',
+          tags: { task_id: '8' },
+          hours: 720,
+          max_points: 360,
+        },
+      }),
+      metricQueryResultSchema,
+    )
+    expect(boundary.series[0]).toMatchObject({
+      metric_key: 'ping.latency_ms',
+      max_points: 360,
+      count: 360,
+    })
   })
 })
