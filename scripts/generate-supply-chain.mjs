@@ -188,7 +188,6 @@ async function createSbom(packages) {
   const project = JSON.parse(
     await readFile(resolve(root, 'package.json'), 'utf8'),
   )
-  const lockfile = await readFile(resolve(root, 'pnpm-lock.yaml'))
   const rootRef = `pkg:npm/${encodeURIComponent(project.name)}@${project.version}`
   const { directRefs, graph } = collectDependencyGraph()
   const embeddedBuildInputRefs = packages
@@ -222,29 +221,36 @@ async function createSbom(packages) {
     return component
   })
 
+  const projectComponent = {
+    type: 'application',
+    'bom-ref': rootRef,
+    name: project.name,
+    version: project.version,
+    licenses: [{ expression: project.license }],
+    purl: rootRef,
+  }
+  const dependencies = [
+    { ref: rootRef, dependsOn: releaseRefs },
+    ...components.map((component) => ({
+      ref: component['bom-ref'],
+      dependsOn: [...(graph.get(component['bom-ref']) ?? [])].sort(),
+    })),
+  ]
+  const fingerprint = JSON.stringify({
+    bomFormat: 'CycloneDX',
+    specVersion: '1.6',
+    component: projectComponent,
+    components,
+    dependencies,
+  })
   const sbom = {
     bomFormat: 'CycloneDX',
     specVersion: '1.6',
-    serialNumber: `urn:uuid:${deterministicUuid(`${project.name}@${project.version}\0${lockfile}`)}`,
+    serialNumber: `urn:uuid:${deterministicUuid(fingerprint)}`,
     version: 1,
-    metadata: {
-      component: {
-        type: 'application',
-        'bom-ref': rootRef,
-        name: project.name,
-        version: project.version,
-        licenses: [{ expression: project.license }],
-        purl: rootRef,
-      },
-    },
+    metadata: { component: projectComponent },
     components,
-    dependencies: [
-      { ref: rootRef, dependsOn: releaseRefs },
-      ...components.map((component) => ({
-        ref: component['bom-ref'],
-        dependsOn: [...(graph.get(component['bom-ref']) ?? [])].sort(),
-      })),
-    ],
+    dependencies,
   }
 
   const componentRefs = new Set(
