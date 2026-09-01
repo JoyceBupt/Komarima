@@ -33,6 +33,33 @@ test('loads an instance deep link through the SPA fallback', async ({
   await expect(page.getByRole('heading', { name: '全部探针' })).toBeVisible()
 })
 
+test('opens the Komari admin route through a hard navigation', async ({
+  page,
+}) => {
+  await mockKomari132(page)
+  await page.setViewportSize({ width: 320, height: 700 })
+  await page.goto('/')
+
+  const adminLink = page.getByRole('link', { name: '管理后台' })
+  await expect(adminLink).toBeVisible()
+  await expect(adminLink).toHaveAttribute('href', '/admin')
+  expect(
+    await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth -
+        document.documentElement.clientWidth,
+    ),
+  ).toBeLessThanOrEqual(1)
+
+  const adminRequest = page.waitForRequest(
+    (request) =>
+      request.isNavigationRequest() &&
+      new URL(request.url()).pathname === '/admin',
+  )
+  await adminLink.click()
+  expect(new URL((await adminRequest).url()).pathname).toBe('/admin')
+})
+
 test('loads history only after the detail action', async ({ page }) => {
   const mock = await mockKomari132(page)
   await page.goto('/instance/node-online')

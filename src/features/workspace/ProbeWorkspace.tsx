@@ -6,7 +6,13 @@ import {
   useSearchParams,
 } from 'react-router-dom'
 import { AppearanceMenu, type ThemePreference } from '../../ui/AppearanceMenu'
-import { FilterIcon, MenuIcon, PanelIcon, SearchIcon } from '../../ui/Icons'
+import {
+  FilterIcon,
+  MenuIcon,
+  PanelIcon,
+  SearchIcon,
+  SettingsIcon,
+} from '../../ui/Icons'
 import { InspectorPane } from './InspectorPane'
 import { NavigatorPane } from './NavigatorPane'
 import { ProbeEditorPane } from './ProbeEditorPane'
@@ -452,6 +458,15 @@ export function ProbeWorkspace({
             </div>
 
             <AppearanceMenu defaultPreference={defaultAppearance} />
+
+            <a
+              aria-label="管理后台"
+              className="toolbar-button toolbar-link"
+              href="/admin"
+            >
+              <SettingsIcon className="toolbar-icon" />
+              <span className="toolbar-label">管理</span>
+            </a>
           </div>
         </header>
 

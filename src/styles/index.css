@@ -517,6 +517,10 @@ input:focus-visible {
   flex: 0 0 auto;
 }
 
+.toolbar-link {
+  text-decoration: none;
+}
+
 .popover-menu,
 .search-popover {
   position: absolute;
@@ -1518,7 +1522,7 @@ input:focus-visible {
   }
 
   .toolbar-start {
-    gap: 12px;
+    gap: 8px;
   }
 
   .panel-toggle-group {
@@ -1535,7 +1539,7 @@ input:focus-visible {
   }
 
   .toolbar-actions {
-    gap: 6px;
+    gap: 4px;
   }
 
   .toolbar-button {
@@ -1663,7 +1667,7 @@ input:focus-visible {
   }
 }
 
-@media (max-width: 349px) {
+@media (max-width: 369px) {
   .brand {
     display: none;
   }

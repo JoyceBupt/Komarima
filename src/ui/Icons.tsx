@@ -95,6 +95,22 @@ export function PaletteIcon(props: IconProps) {
   )
 }
 
+export function SettingsIcon(props: IconProps) {
+  return (
+    <IconFrame {...props}>
+      <path
+        d="M4 7h5m4 0h7M4 12h9m4 0h3M4 17h2m4 0h10"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.7"
+      />
+      <circle cx="11" cy="7" r="2" stroke="currentColor" strokeWidth="1.7" />
+      <circle cx="15" cy="12" r="2" stroke="currentColor" strokeWidth="1.7" />
+      <circle cx="8" cy="17" r="2" stroke="currentColor" strokeWidth="1.7" />
+    </IconFrame>
+  )
+}
+
 export function ChevronRightIcon(props: IconProps) {
   return (
     <IconFrame {...props}>
