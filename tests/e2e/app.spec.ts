@@ -254,8 +254,12 @@ test('switches and restores the card view with native metadata', async ({
 }) => {
   await mockKomari132(page)
   await page.clock.setFixedTime(new Date('2026-08-30T04:00:00Z'))
+  await page.setViewportSize({ width: 1440, height: 900 })
   await page.goto('/')
 
+  await expect(page.locator('.fleet-summary .sr-only')).toHaveText(
+    '1 在线，1 离线，1 暂无上报',
+  )
   await page.getByRole('button', { name: '卡片视图' }).click()
   await expect(page.locator('.probe-card')).toHaveCount(3)
   const tokyo = page.getByRole('button', { name: /Tokyo Edge/ })
@@ -263,6 +267,30 @@ test('switches and restores the card view with native metadata', async ({
   await expect(tokyo).toContainText('$8.5/月')
   await expect(tokyo).toContainText('13.4 MB / 1 TB')
   await expect(tokyo).toContainText('合计')
+  const cardLayout = await page.locator('.probe-card').evaluateAll((cards) =>
+    cards.map((card) => ({
+      height: card.getBoundingClientRect().height,
+      metricsTop: card
+        .querySelector('.probe-card-metrics')
+        ?.getBoundingClientRect().top,
+      trafficTop: card
+        .querySelector('.probe-card-traffic')
+        ?.getBoundingClientRect().top,
+      footerTop: card
+        .querySelector('.probe-card-footer')
+        ?.getBoundingClientRect().top,
+    })),
+  )
+  for (const key of [
+    'height',
+    'metricsTop',
+    'trafficTop',
+    'footerTop',
+  ] as const) {
+    const values = cardLayout.map((card) => card[key] ?? Number.NaN)
+    expect(values.every(Number.isFinite)).toBe(true)
+    expect(Math.max(...values) - Math.min(...values)).toBeLessThanOrEqual(1)
+  }
   expect(
     await page.evaluate(() => localStorage.getItem('komarima-workspace-view')),
   ).toBe('cards')

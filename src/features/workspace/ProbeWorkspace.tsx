@@ -126,9 +126,24 @@ export function ProbeWorkspace({
           </div>
 
           <p className="fleet-summary">
-            {onlineCount} 在线<span aria-hidden="true"> · </span>
-            {offlineCount} 离线<span aria-hidden="true"> · </span>
-            {missingCount} 暂无上报
+            <span className="sr-only">
+              {onlineCount} 在线，{offlineCount} 离线，{missingCount} 暂无上报
+            </span>
+            <span aria-hidden="true" className="fleet-stat" data-tone="online">
+              <span className="fleet-stat-dot" />
+              <strong>{onlineCount}</strong>
+              <span>在线</span>
+            </span>
+            <span aria-hidden="true" className="fleet-stat" data-tone="offline">
+              <span className="fleet-stat-dot" />
+              <strong>{offlineCount}</strong>
+              <span>离线</span>
+            </span>
+            <span aria-hidden="true" className="fleet-stat" data-tone="missing">
+              <span className="fleet-stat-dot" />
+              <strong>{missingCount}</strong>
+              <span>暂无上报</span>
+            </span>
           </p>
 
           <div className="toolbar-actions">
