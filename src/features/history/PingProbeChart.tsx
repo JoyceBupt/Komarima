@@ -85,15 +85,40 @@ export function PingProbeChart({
     () => series.filter((metric) => metric.metricKey === 'ping.latency_ms'),
     [series],
   )
+  const pingEntries = useMemo(
+    () =>
+      pingSeries.map((metric, colorIndex) => ({
+        metric,
+        colorIndex,
+        identity: seriesIdentity(metric),
+      })),
+    [pingSeries],
+  )
   const containerRef = useRef<HTMLDivElement>(null)
   const [themeRevision, setThemeRevision] = useState(0)
+  const [hiddenSeriesIds, setHiddenSeriesIds] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  )
   const [cursorReadouts, setCursorReadouts] = useState<CursorReadouts | null>(
     null,
   )
-  const readouts =
-    cursorReadouts?.source === pingSeries
-      ? cursorReadouts.values
-      : pingSeries.map(latestValue)
+  const visibleEntries = useMemo(
+    () => pingEntries.filter((entry) => !hiddenSeriesIds.has(entry.identity)),
+    [hiddenSeriesIds, pingEntries],
+  )
+  const visiblePingSeries = useMemo(
+    () => visibleEntries.map((entry) => entry.metric),
+    [visibleEntries],
+  )
+  const cursorValues = useMemo(() => {
+    if (cursorReadouts?.source !== visiblePingSeries) return null
+    return new Map(
+      visibleEntries.map((entry, index) => [
+        entry.identity,
+        cursorReadouts.values[index] ?? null,
+      ]),
+    )
+  }, [cursorReadouts, visibleEntries, visiblePingSeries])
 
   useEffect(() => {
     const observer = new MutationObserver(() =>
@@ -108,7 +133,7 @@ export function PingProbeChart({
 
   useEffect(() => {
     const container = containerRef.current
-    if (!container || !pingSeries.length) return
+    if (!container || !visiblePingSeries.length) return
 
     const styles = getComputedStyle(container)
     const text = cssColor(styles, '--km-text-secondary', '#657083')
@@ -121,7 +146,7 @@ export function PingProbeChart({
     const colors = colorProperties.map((property, index) =>
       cssColor(styles, property, colorFallbacks[index]!),
     )
-    const data = toAlignedMultiMetricData(pingSeries)
+    const data = toAlignedMultiMetricData(visiblePingSeries)
     const width = Math.max(1, Math.floor(container.clientWidth || 720))
     const plot = new uPlot(
       {
@@ -146,8 +171,8 @@ export function PingProbeChart({
               const index = self.cursor.idx
               if (index == null) return
               setCursorReadouts({
-                source: pingSeries,
-                values: pingSeries.map((_metric, seriesIndex) => {
+                source: visiblePingSeries,
+                values: visiblePingSeries.map((_metric, seriesIndex) => {
                   const value = self.data[seriesIndex + 1]?.[index]
                   return typeof value === 'number' && Number.isFinite(value)
                     ? value
@@ -187,9 +212,9 @@ export function PingProbeChart({
         ],
         series: [
           {},
-          ...pingSeries.map((metric, index) => ({
-            label: legendLabel(metric, metricLabels),
-            stroke: colors[index % colors.length],
+          ...visibleEntries.map((entry) => ({
+            label: legendLabel(entry.metric, metricLabels),
+            stroke: colors[entry.colorIndex % colors.length],
             width: 2,
             spanGaps: false,
             points: { show: false },
@@ -223,44 +248,68 @@ export function PingProbeChart({
       window.removeEventListener('resize', onWindowResize)
       plot.destroy()
     }
-  }, [height, metricLabels, pingSeries, themeRevision])
+  }, [height, metricLabels, themeRevision, visibleEntries, visiblePingSeries])
 
   if (!pingSeries.length) return null
 
-  const hasData = pingSeries.some((metric) =>
+  const hasData = visiblePingSeries.some((metric) =>
     metric.points.some(isUsableMetricPoint),
   )
+
+  const toggleSeries = (identity: string) => {
+    setHiddenSeriesIds((current) => {
+      const next = new Set(current)
+      if (next.has(identity)) next.delete(identity)
+      else next.add(identity)
+      return next
+    })
+    setCursorReadouts(null)
+  }
 
   return (
     <article className="history-chart-card history-ping-card">
       <header className="history-ping-heading">
         <div>
           <h3>Ping 延迟</h3>
-          <p>{pingSeries.length} 条线路</p>
+          <p>
+            {visibleEntries.length}/{pingEntries.length} 条线路
+          </p>
         </div>
         <ul aria-label="Ping 线路">
-          {pingSeries.map((metric, index) => (
-            <li
-              key={seriesIdentity(metric)}
-              style={
-                {
-                  '--history-ping-line': `var(${colorProperties[index % colorProperties.length]})`,
-                } as CSSProperties
-              }
-            >
-              <span aria-hidden="true" />
-              <b>{legendLabel(metric, metricLabels)}</b>
-              <strong>
-                {formatMetricValue(readouts[index] ?? null, 'ms')}
-              </strong>
-            </li>
-          ))}
+          {pingEntries.map((entry) => {
+            const visible = !hiddenSeriesIds.has(entry.identity)
+            const label = legendLabel(entry.metric, metricLabels)
+            const value = cursorValues?.has(entry.identity)
+              ? (cursorValues.get(entry.identity) ?? null)
+              : latestValue(entry.metric)
+            return (
+              <li key={entry.identity}>
+                <button
+                  aria-label={`${label}，${visible ? '已显示' : '已隐藏'}`}
+                  aria-pressed={visible}
+                  onClick={() => toggleSeries(entry.identity)}
+                  style={
+                    {
+                      '--history-ping-line': `var(${colorProperties[entry.colorIndex % colorProperties.length]})`,
+                    } as CSSProperties
+                  }
+                  type="button"
+                >
+                  <span aria-hidden="true" />
+                  <b>{label}</b>
+                  <strong>{formatMetricValue(value, 'ms')}</strong>
+                </button>
+              </li>
+            )
+          })}
         </ul>
       </header>
-      {hasData ? (
+      {visiblePingSeries.length && hasData ? (
         <div aria-hidden="true" className="history-uplot" ref={containerRef} />
       ) : (
-        <div className="history-chart-empty">该时段暂无数据</div>
+        <div className="history-chart-empty">
+          {visiblePingSeries.length ? '该时段暂无数据' : '未选线路'}
+        </div>
       )}
     </article>
   )

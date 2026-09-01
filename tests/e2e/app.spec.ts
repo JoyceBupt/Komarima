@@ -30,7 +30,9 @@ test('loads an instance deep link through the SPA fallback', async ({
 
   expect(response?.ok()).toBe(true)
   await expect(page.getByRole('main')).toBeVisible()
-  await expect(page.getByRole('heading', { name: '全部探针' })).toBeVisible()
+  await expect(page.getByText('探针历史')).toBeVisible()
+  await page.getByRole('button', { name: '返回探针列表' }).click()
+  await expect(page).toHaveURL(/\/$/)
 })
 
 test('opens the Komari admin route through a hard navigation', async ({
@@ -60,18 +62,15 @@ test('opens the Komari admin route through a hard navigation', async ({
   expect(new URL((await adminRequest).url()).pathname).toBe('/admin')
 })
 
-test('loads history only after the detail action', async ({ page }) => {
+test('opens history directly when a probe is selected', async ({ page }) => {
   const mock = await mockKomari132(page)
-  await page.goto('/instance/node-online')
+  await page.goto('/?q=Tokyo')
   await expect(page.getByRole('heading', { name: '全部探针' })).toBeVisible()
   expect(mock.rpcMethods).not.toContain('public:queryMetrics')
-  expect(
-    (await page.locator('.inspector-pane').boundingBox())?.width,
-  ).toBeGreaterThan(300)
 
-  await page.getByRole('link', { name: '详情' }).click()
+  await page.getByRole('button', { name: /Tokyo Edge/ }).click()
 
-  await expect(page).toHaveURL(/view=history/)
+  await expect(page).toHaveURL(/\/instance\/node-online\?range=6h/)
   await expect(page.getByText('探针历史')).toBeVisible()
   await expect(page.getByRole('button', { name: '1h' })).toBeVisible()
   await expect
@@ -106,6 +105,28 @@ test('loads history only after the detail action', async ({ page }) => {
           .__komarimaFirstPlot,
     ),
   ).toBe(true)
+
+  const tokyoToggle = pingCard.getByRole('button', {
+    name: '东京 NTT，已显示',
+  })
+  await tokyoToggle.click()
+  await expect(
+    pingCard.getByRole('button', { name: '东京 NTT，已隐藏' }),
+  ).toHaveAttribute('aria-pressed', 'false')
+  await expect(pingCard.getByText('1/2 条线路')).toBeVisible()
+  await expect(pingCard.locator('.uplot')).toBeVisible()
+
+  await page.goBack()
+  await expect(page).toHaveURL(/\?q=Tokyo$/)
+  await expect(page.getByRole('heading', { name: '全部探针' })).toBeVisible()
+  await page.goForward()
+  await expect(page.getByText('探针历史')).toBeVisible()
+
+  await page.getByRole('button', { name: '24h' }).click()
+  await page.getByRole('button', { name: '返回探针列表' }).click()
+  await expect(page).toHaveURL(/\?q=Tokyo$/)
+  await page.goForward()
+  await expect(page).toHaveURL(/\/instance\/node-online\?range=24h/)
 })
 
 test('refreshes node metadata every minute while visible', async ({ page }) => {
@@ -201,7 +222,6 @@ test('ignores default-on Ping tasks not assigned to the probe', async ({
 }) => {
   const mock = await mockKomari132(page, { unassignedDefaultPing: true })
   await page.goto('/instance/node-online')
-  await page.getByRole('link', { name: '详情' }).click()
   await expect(page.getByText('探针历史')).toBeVisible()
 
   await expect
@@ -217,7 +237,6 @@ test('ignores default-on Ping tasks not assigned to the probe', async ({
 test('reports Ping task failures as history errors', async ({ page }) => {
   await mockKomari132(page, { failPingTasks: true })
   await page.goto('/instance/node-online')
-  await page.getByRole('link', { name: '详情' }).click()
 
   await expect(page.getByRole('alert')).toContainText('加载失败')
 })
@@ -240,32 +259,32 @@ test('restores filtering and sorting from the URL', async ({ page }) => {
   await expect(page).toHaveURL(/dir=desc/)
 })
 
-test('traps and restores focus for the mobile inspector', async ({ page }) => {
+test('keeps the mobile inspector optional and history navigation reversible', async ({
+  page,
+}) => {
   await mockKomari132(page)
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
   const probeRow = page.getByRole('button', { name: /Tokyo Edge/ })
 
-  await probeRow.click()
+  const inspectorToggle = page.getByRole('button', { name: '切换检查器' })
+  await inspectorToggle.click()
   const inspector = page.getByRole('dialog', { name: '探针检查器' })
   await expect(inspector).toBeVisible()
+  const inspectorClose = page.getByRole('button', { name: '关闭检查器' })
+  await expect(inspectorClose).toBeFocused()
   await page.keyboard.press('Tab')
-  expect(
-    await inspector.evaluate((element) =>
-      element.contains(document.activeElement),
-    ),
-  ).toBe(true)
+  await expect(inspectorClose).toBeFocused()
 
   await page.keyboard.press('Escape')
   await expect(inspector).toHaveCount(0)
-  await expect(probeRow).toBeFocused()
+  await expect(inspectorToggle).toBeFocused()
 
   await probeRow.click()
-  await page.getByRole('link', { name: '详情' }).click()
-  await expect(page).toHaveURL(/view=history/)
+  await expect(page).toHaveURL(/\/instance\/node-online\?range=6h/)
   await expect(inspector).toHaveCount(0)
   await expect(page.getByText('探针历史')).toBeVisible()
-  await expect(page.getByRole('button', { name: '返回探针' })).toBeFocused()
+  await expect(page.getByRole('button', { name: '返回探针列表' })).toBeVisible()
   await expect(page.locator('.history-ping-card .uplot')).toBeVisible()
   expect(
     await page.evaluate(
@@ -280,14 +299,68 @@ test('traps and restores focus for the mobile inspector', async ({ page }) => {
   await expect(page.locator('.history-ping-card .uplot')).toBeVisible()
 
   await page.goBack()
-  await expect(page).not.toHaveURL(/view=history/)
+  await expect(page).toHaveURL(/\/$/)
   await page.getByRole('button', { name: '切换检查器' }).click()
   await expect(inspector).toBeVisible()
 
+  await inspectorClose.click()
   await page.goForward()
-  await expect(page).toHaveURL(/view=history/)
+  await expect(page).toHaveURL(/\/instance\/node-online\?range=6h/)
   await expect(inspector).toHaveCount(0)
   await expect(page.locator('.history-ping-card .uplot')).toBeVisible()
+})
+
+test('uses each metric retention while keeping the 7d Ping range', async ({
+  page,
+}) => {
+  const mock = await mockKomari132(page, {
+    metricRetentionDays: {
+      'cpu.usage': 1,
+      'memory.used': 1,
+      'disk.used': 1,
+      'net.in.rate': 1,
+      'net.out.rate': 1,
+      'ping.latency_ms': 7,
+    },
+  })
+  await page.goto('/')
+  await page.getByRole('button', { name: /Tokyo Edge/ }).click()
+  await page.getByRole('button', { name: '7d' }).click()
+
+  await expect(page.getByText('资源24h · Ping7d')).toBeVisible()
+  await expect(
+    page.locator('.history-chart-card[data-tone="cpu"] .uplot'),
+  ).toBeVisible()
+  await expect(page.locator('.history-ping-card .uplot')).toBeVisible()
+
+  await expect
+    .poll(
+      () =>
+        mock.rpcRequests.filter(
+          (request) =>
+            request.method === 'public:queryMetrics' &&
+            request.params?.hours === 168,
+        ).length,
+    )
+    .toBe(2)
+  const sevenDayQueries = mock.rpcRequests.filter(
+    (request) =>
+      request.method === 'public:queryMetrics' && request.params?.hours === 168,
+  )
+  expect(
+    sevenDayQueries.every(
+      (request) => request.params?.metric_key === 'ping.latency_ms',
+    ),
+  ).toBe(true)
+  expect(
+    mock.rpcRequests.some(
+      (request) =>
+        request.method === 'public:queryMetrics' &&
+        request.params?.hours === 24 &&
+        Array.isArray(request.params.metric_keys) &&
+        request.params.metric_keys.includes('cpu.usage'),
+    ),
+  ).toBe(true)
 })
 
 test('keeps a 500-probe workspace bounded', async ({ page }) => {

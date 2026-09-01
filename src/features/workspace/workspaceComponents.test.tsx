@@ -85,7 +85,7 @@ describe('NavigatorPane', () => {
 })
 
 describe('InspectorPane', () => {
-  it('closes a modal inspector before opening history', async () => {
+  it('keeps metadata concise and closes as a modal', async () => {
     const user = userEvent.setup()
     const onClose = vi.fn()
 
@@ -95,7 +95,9 @@ describe('InspectorPane', () => {
       </MemoryRouter>,
     )
 
-    await user.click(screen.getByRole('link', { name: '详情' }))
+    expect(screen.queryByRole('link', { name: '详情' })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'one' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '关闭检查器' }))
     expect(onClose).toHaveBeenCalledOnce()
   })
 })

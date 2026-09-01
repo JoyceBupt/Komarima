@@ -16,6 +16,7 @@ export interface Komari132ScenarioOptions {
   rpcDenied?: boolean
   unassignedDefaultPing?: boolean
   failPingTasks?: boolean
+  metricRetentionDays?: Readonly<Record<string, number>>
   now?: () => Date
 }
 
@@ -34,6 +35,7 @@ export interface Komari132Scenario {
   handleRest(path: string): Komari132ScenarioResponse | null
   handleRpc(request: Komari132RpcRequest): Komari132ScenarioResponse
   readonly rpcMethods: string[]
+  readonly rpcRequests: Komari132RpcRequest[]
   readonly meRequests: number
   setAuthenticated(value: boolean): void
   setRpcDenied(value: boolean): void
@@ -95,6 +97,32 @@ const metricSpecs = {
   'net.out.rate': ['bytes/s', 1_048_576, 393_216],
   'ping.latency_ms': ['ms', 24, 7],
 } as const
+
+function scenarioMetricDefinitions(
+  retentionDays: Readonly<Record<string, number>> | undefined,
+) {
+  const definitions = clone(metricDefinitionsResponse.result) as Array<
+    Record<string, unknown>
+  >
+  for (const [name, days] of Object.entries(retentionDays ?? {})) {
+    const existing = definitions.find((definition) => definition.name === name)
+    if (existing) {
+      existing.retention_days = days
+      continue
+    }
+    if (!(name in metricSpecs)) continue
+    const spec = metricSpecs[name as keyof typeof metricSpecs]
+    definitions.push({
+      name,
+      type: 'gauge',
+      unit: spec[0],
+      retention_days: days,
+      created_at: '2026-08-01T00:00:00Z',
+      updated_at: '2026-08-30T00:00:00Z',
+    })
+  }
+  return definitions
+}
 
 const clone = <T>(value: T): T => structuredClone(value)
 
@@ -195,6 +223,7 @@ function createMetricSeries(
   start: Date,
   end: Date,
   maxPoints: number,
+  retentionDays: number,
 ) {
   const spec = metricSpecs[metricKey as keyof typeof metricSpecs]
   if (!spec) return null
@@ -233,7 +262,7 @@ function createMetricSeries(
     entity_id: entityId,
     type: 'gauge' as const,
     unit: spec[0],
-    retention_days: 30,
+    retention_days: retentionDays,
     ...(tags ? { tags } : {}),
     downsampled: pointCount === maxPoints,
     downsample_algorithm: 'avg' as const,
@@ -248,6 +277,7 @@ function createMetricSeries(
 function metricResult(
   params: Record<string, unknown> | undefined,
   now: (() => Date) | undefined,
+  retentionDays: Readonly<Record<string, number>> | undefined,
 ) {
   const window = queryWindow(params, now)
   if (!window) return null
@@ -280,6 +310,7 @@ function metricResult(
         window.start,
         window.end,
         requestedMaxPoints,
+        retentionDays?.[metricKey] ?? 30,
       ),
     )
     .filter((value) => value !== null)
@@ -324,6 +355,7 @@ export function createKomari132Scenario(
   }
 
   const rpcMethods: string[] = []
+  const rpcRequests: Komari132RpcRequest[] = []
   let authenticated = Boolean(options.authenticated)
   let rpcDenied = Boolean(options.rpcDenied)
   let meRequests = 0
@@ -391,6 +423,7 @@ export function createKomari132Scenario(
 
   return {
     rpcMethods,
+    rpcRequests,
     get meRequests() {
       return meRequests
     },
@@ -415,6 +448,7 @@ export function createKomari132Scenario(
     },
     handleRpc(request) {
       rpcMethods.push(request.method)
+      rpcRequests.push(clone(request))
       if (rpcDenied) {
         return rpcError(
           request.id,
@@ -460,9 +494,16 @@ export function createKomari132Scenario(
             })),
           )
         case 'public:listMetricDefinitions':
-          return rpcSuccess(request.id, clone(metricDefinitionsResponse.result))
+          return rpcSuccess(
+            request.id,
+            scenarioMetricDefinitions(options.metricRetentionDays),
+          )
         case 'public:queryMetrics': {
-          const result = metricResult(request.params, options.now)
+          const result = metricResult(
+            request.params,
+            options.now,
+            options.metricRetentionDays,
+          )
           return result
             ? rpcSuccess(request.id, result)
             : rpcError(request.id, -32602, 'Invalid Metric query parameters')

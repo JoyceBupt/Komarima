@@ -33,7 +33,6 @@ for (const theme of themes) {
     await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' })
     await page.setViewportSize({ width: 1440, height: 900 })
     await page.goto('/instance/node-online')
-    await page.getByRole('link', { name: '详情' }).click()
     await expect(page.getByText('探针历史')).toBeVisible()
     await expect(page.locator('.history-chart-loading')).toHaveCount(0)
 
@@ -47,7 +46,7 @@ test('has no serious mobile inspector violations', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'light', reducedMotion: 'reduce' })
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
-  await page.getByRole('button', { name: /Tokyo Edge/ }).click()
+  await page.getByRole('button', { name: '切换检查器' }).click()
   await expect(page.getByRole('dialog', { name: '探针检查器' })).toBeVisible()
 
   await expectNoSeriousViolations(page)

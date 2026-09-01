@@ -6,7 +6,12 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { useParams, useSearchParams } from 'react-router-dom'
+import {
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   KomariApiClient,
@@ -19,6 +24,7 @@ import {
   shouldRecoverPublicDataAccess,
   useBootstrapQuery,
   useLatestStatusesQuery,
+  useMetricDefinitionsQuery,
   useMetricQuery,
   useNodesQuery,
   usePingMetricQueries,
@@ -26,11 +32,14 @@ import {
 } from '../../api'
 import { normalizeMetricSeries } from '../../domain'
 import {
+  availableMetricHours,
+  historyAvailabilityLabel,
   HistoryDetailView,
   seriesIdentity,
   type HistoryLoadState,
   type HistoryRange,
 } from '../history'
+import { ChevronLeftIcon } from '../../ui/Icons'
 import { workspaceProbesFromDomain } from './fromDomain'
 import { ProbeWorkspace } from './ProbeWorkspace'
 
@@ -41,6 +50,9 @@ const historyHours: Record<HistoryRange, number> = {
   '24h': 24,
   '7d': 168,
 }
+const resourceMetricKeys = ['cpu.usage', 'memory.used', 'disk.used']
+const networkMetricKeys = ['net.in.rate', 'net.out.rate']
+const pingMetricKeys = ['ping.latency_ms']
 
 function useClock(active: boolean) {
   const [now, setNow] = useState(() => new Date())
@@ -111,6 +123,8 @@ export function LiveProbeWorkspace({
   client = defaultClient,
 }: LiveProbeWorkspaceProps) {
   const queryClient = useQueryClient()
+  const location = useLocation()
+  const navigate = useNavigate()
   const { uuid } = useParams<{ uuid: string }>()
   const [searchParams, setSearchParams] = useSearchParams()
   const bootstrapQuery = useBootstrapQuery(client)
@@ -123,15 +137,32 @@ export function LiveProbeWorkspace({
   )
   const now = useClock(Boolean(nodesQuery.data?.length))
   const historyRange = parseHistoryRange(searchParams.get('range'))
+  const requestedHistoryHours = historyHours[historyRange]
   const selectedNode = nodesQuery.data?.find((node) => node.uuid === uuid)
-  const historyActive =
-    searchParams.get('view') === 'history' && Boolean(selectedNode)
+  const historyActive = Boolean(selectedNode)
+  const metricDefinitions = useMetricDefinitionsQuery(
+    client,
+    bootstrapQuery.data,
+    historyActive,
+  )
+  const definitionsReady = !metricDefinitions.isPending
+  const resourceHistoryHours = availableMetricHours(
+    metricDefinitions.data,
+    resourceMetricKeys,
+    requestedHistoryHours,
+  )
+  const networkHistoryHours = availableMetricHours(
+    metricDefinitions.data,
+    networkMetricKeys,
+    requestedHistoryHours,
+  )
+  const pingHistoryHours = availableMetricHours(
+    metricDefinitions.data,
+    pingMetricKeys,
+    requestedHistoryHours,
+  )
   const historyBase = selectedNode
-    ? {
-        entity_id: selectedNode.uuid,
-        hours: historyHours[historyRange],
-        max_points: 240,
-      }
+    ? { entity_id: selectedNode.uuid, max_points: 240 }
     : null
   const resourceHistory = useMetricQuery(
     client,
@@ -139,10 +170,11 @@ export function LiveProbeWorkspace({
     historyBase
       ? {
           ...historyBase,
-          metric_keys: ['cpu.usage', 'memory.used', 'disk.used'],
+          hours: resourceHistoryHours,
+          metric_keys: resourceMetricKeys,
         }
       : null,
-    historyActive,
+    historyActive && definitionsReady,
   )
   const networkHistory = useMetricQuery(
     client,
@@ -150,10 +182,11 @@ export function LiveProbeWorkspace({
     historyBase
       ? {
           ...historyBase,
-          metric_keys: ['net.in.rate', 'net.out.rate'],
+          hours: networkHistoryHours,
+          metric_keys: networkMetricKeys,
         }
       : null,
-    historyActive,
+    historyActive && definitionsReady,
   )
   const pingTasks = usePingTasksQuery(
     client,
@@ -179,13 +212,13 @@ export function LiveProbeWorkspace({
       selectedNodeId
         ? selectedPingTasks.map((task) => ({
             entity_id: selectedNodeId,
-            hours: historyHours[historyRange],
+            hours: pingHistoryHours,
             max_points: 240,
             metric_key: 'ping.latency_ms',
             tags: { task_id: String(task.id) },
           }))
         : [],
-    [historyRange, selectedNodeId, selectedPingTasks],
+    [pingHistoryHours, selectedNodeId, selectedPingTasks],
   )
   const pingHistory = usePingMetricQueries(
     client,
@@ -202,6 +235,7 @@ export function LiveProbeWorkspace({
   const accessError = [
     nodesQuery.error,
     latestQuery.error,
+    metricDefinitions.error,
     resourceHistory.error,
     networkHistory.error,
     pingTasks.error,
@@ -248,48 +282,64 @@ export function LiveProbeWorkspace({
       ? 'error'
       : resourceHistory.isPending ||
           networkHistory.isPending ||
+          metricDefinitions.isPending ||
           pingTasks.isPending ||
           (selectedPingTasks.length > 0 && pingHistory.isPending)
         ? 'loading'
         : 'ready'
   const closeHistory = useCallback(() => {
-    const next = new URLSearchParams(searchParams)
-    next.delete('view')
-    next.delete('range')
-    setSearchParams(next, { replace: true })
-  }, [searchParams, setSearchParams])
+    const state = location.state as { fromWorkspace?: boolean } | null
+    if (state?.fromWorkspace) {
+      navigate(-1)
+      return
+    }
+    navigate('/', { replace: true })
+  }, [location.state, navigate])
   const changeHistoryRange = useCallback(
     (range: HistoryRange) => {
       const next = new URLSearchParams(searchParams)
-      next.set('view', 'history')
       next.set('range', range)
-      setSearchParams(next, { replace: true })
+      setSearchParams(next, { replace: true, state: location.state })
     },
-    [searchParams, setSearchParams],
+    [location.state, searchParams, setSearchParams],
   )
   const { refetch: refetchResourceHistory } = resourceHistory
   const { refetch: refetchNetworkHistory } = networkHistory
+  const { refetch: refetchMetricDefinitions } = metricDefinitions
   const { refetch: refetchPingTasks } = pingTasks
   const { refetch: refetchPingHistory } = pingHistory
   const retryHistory = useCallback(() => {
     void refetchResourceHistory()
     void refetchNetworkHistory()
+    void refetchMetricDefinitions()
     void refetchPingTasks()
     if (selectedPingTasks.length > 0) void refetchPingHistory()
   }, [
     refetchNetworkHistory,
+    refetchMetricDefinitions,
     refetchPingHistory,
     refetchPingTasks,
     refetchResourceHistory,
     selectedPingTasks.length,
   ])
+  const historyRangeNote = historyAvailabilityLabel({
+    requestedHours: requestedHistoryHours,
+    resourceHours: Math.min(resourceHistoryHours, networkHistoryHours),
+    pingHours: pingHistoryHours,
+    hasPing: selectedPingTasks.length > 0,
+  })
   const historyContent = useMemo(
     () =>
       historyActive && selectedNode ? (
         <section className="workspace-pane history-editor-shell">
           <div className="history-editor-toolbar">
-            <button autoFocus onClick={closeHistory} type="button">
-              返回探针
+            <button
+              aria-label="返回探针列表"
+              onClick={closeHistory}
+              type="button"
+            >
+              <ChevronLeftIcon />
+              探针
             </button>
           </div>
           <HistoryDetailView
@@ -300,6 +350,7 @@ export function LiveProbeWorkspace({
             onRangeChange={changeHistoryRange}
             onRetry={retryHistory}
             range={historyRange}
+            rangeNote={historyRangeNote ?? undefined}
             series={historyPresentation.series}
             state={historyState}
           />
@@ -310,6 +361,7 @@ export function LiveProbeWorkspace({
       closeHistory,
       historyActive,
       historyRange,
+      historyRangeNote,
       historyPresentation,
       historyState,
       retryHistory,

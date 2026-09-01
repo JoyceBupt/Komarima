@@ -125,6 +125,20 @@ export function ChevronRightIcon(props: IconProps) {
   )
 }
 
+export function ChevronLeftIcon(props: IconProps) {
+  return (
+    <IconFrame {...props}>
+      <path
+        d="m15 6-6 6 6 6"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+      />
+    </IconFrame>
+  )
+}
+
 export function CloseIcon(props: IconProps) {
   return (
     <IconFrame {...props}>
