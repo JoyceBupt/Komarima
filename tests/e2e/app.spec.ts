@@ -358,28 +358,3 @@ test('uses each metric retention while keeping the 7d Ping range', async ({
     ),
   ).toBe(true)
 })
-
-test('keeps a 500-probe workspace bounded', async ({ page }) => {
-  const mock = await mockKomari132(page, { nodeCount: 500 })
-  await page.setViewportSize({ width: 1440, height: 900 })
-
-  const loadStartedAt = Date.now()
-  await page.goto('/')
-  await expect(page.getByText('500 在线')).toBeVisible()
-  expect(Date.now() - loadStartedAt).toBeLessThan(3_000)
-
-  const renderedRows = await page.locator('.probe-row').count()
-  expect(renderedRows).toBeLessThanOrEqual(40)
-  expect(
-    mock.rpcMethods.filter((method) => method === 'common:getNodesLatestStatus')
-      .length,
-  ).toBe(1)
-
-  const firstProbe = page.getByRole('button', { name: /Probe 0000/ })
-  await firstProbe.focus()
-  await page.keyboard.press('End')
-  await expect(page.getByRole('button', { name: /Probe 0499/ })).toBeFocused()
-  await expect(
-    page.getByRole('button', { name: /Probe 0499/ }),
-  ).toHaveAccessibleName(/第500项，共500项/)
-})

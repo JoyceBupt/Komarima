@@ -123,7 +123,6 @@ describe('preview mode isolation', () => {
   it('defaults to public and rejects unsupported presets', () => {
     expect(parsePreviewPreset()).toBe('public')
     expect(parsePreviewPreset('private')).toBe('private')
-    expect(parsePreviewPreset('scale-500')).toBe('scale-500')
     expect(() => parsePreviewPreset('invalid')).toThrow(
       /KOMARIMA_PREVIEW_SCENARIO/,
     )

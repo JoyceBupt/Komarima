@@ -6,12 +6,11 @@ import nodesResponse from '../tests/fixtures/komari-1.3.2/nodes-rpc.json' with {
 import permissionDeniedResponse from '../tests/fixtures/komari-1.3.2/permission-denied-rpc.json' with { type: 'json' }
 import privateSitePublic from '../tests/fixtures/komari-1.3.2/private-site-public.json' with { type: 'json' }
 import publicInfo from '../tests/fixtures/komari-1.3.2/public-info.json' with { type: 'json' }
-export type Komari132ScenarioPreset = 'public' | 'private' | 'scale-500'
+export type Komari132ScenarioPreset = 'public' | 'private'
 
 export interface Komari132ScenarioOptions {
   preset?: Komari132ScenarioPreset
   privateSite?: boolean
-  nodeCount?: number
   authenticated?: boolean
   rpcDenied?: boolean
   unassignedDefaultPing?: boolean
@@ -54,7 +53,6 @@ interface ScenarioLatestStatus extends Record<string, unknown> {
 const fixtureWindowEndMs = Date.parse(metricQueryResponse.result.end)
 const maximumGeneratedPoints = 360
 const maximumHistoryHours = 24 * 30
-const maximumNodes = 500
 
 const pingTasks = [
   {
@@ -342,33 +340,13 @@ export function createKomari132Scenario(
 ): Komari132Scenario {
   const preset = options.preset ?? 'public'
   const privateSite = options.privateSite ?? preset === 'private'
-  const nodeCount = options.nodeCount ?? (preset === 'scale-500' ? 500 : null)
-  if (
-    nodeCount !== null &&
-    (!Number.isSafeInteger(nodeCount) ||
-      nodeCount <= 0 ||
-      nodeCount > maximumNodes)
-  ) {
-    throw new RangeError(
-      `Komari preview nodeCount must be an integer from 1 to ${maximumNodes}`,
-    )
-  }
 
   const rpcMethods: string[] = []
   const rpcRequests: Komari132RpcRequest[] = []
   let authenticated = Boolean(options.authenticated)
   let rpcDenied = Boolean(options.rpcDenied)
   let meRequests = 0
-  const publicNodes: ScenarioNode[] = nodeCount
-    ? Array.from({ length: nodeCount }, (_, index) => ({
-        ...clone(nodesResponse.result[0]),
-        uuid: `node-${String(index).padStart(4, '0')}`,
-        name: `Probe ${String(index).padStart(4, '0')}`,
-        group: `Group ${index % 10}`,
-        region: `Region ${index % 20}`,
-        weight: index,
-      }))
-    : clone(nodesResponse.result)
+  const publicNodes: ScenarioNode[] = clone(nodesResponse.result)
   const hiddenNode: ScenarioNode = {
     ...clone(nodesResponse.result[0]),
     uuid: 'node-hidden',
@@ -379,23 +357,10 @@ export function createKomari132Scenario(
   const baseStatus = clone(
     latestStatusResponse.result['node-online'],
   ) as ScenarioLatestStatus
-  const publicStatuses: Record<string, ScenarioLatestStatus> = nodeCount
-    ? Object.fromEntries(
-        publicNodes.map((node, index) => [
-          node.uuid,
-          {
-            ...clone(baseStatus),
-            client: node.uuid,
-            cpu: index % 100,
-            online: true,
-            ping: {},
-          },
-        ]),
-      )
-    : (clone(latestStatusResponse.result) as Record<
-        string,
-        ScenarioLatestStatus
-      >)
+  const publicStatuses = clone(latestStatusResponse.result) as Record<
+    string,
+    ScenarioLatestStatus
+  >
 
   const resultNodes = () =>
     clone(authenticated ? [...publicNodes, hiddenNode] : publicNodes)

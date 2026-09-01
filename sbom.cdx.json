@@ -1,20 +1,20 @@
 {
   "bomFormat": "CycloneDX",
   "specVersion": "1.6",
-  "serialNumber": "urn:uuid:5b7a7d00-4983-54cd-95df-c3e03de287e0",
+  "serialNumber": "urn:uuid:5d601057-1ab9-5dcc-887e-ed8fc6e62322",
   "version": 1,
   "metadata": {
     "component": {
       "type": "application",
-      "bom-ref": "pkg:npm/komarima@0.1.1",
+      "bom-ref": "pkg:npm/komarima@0.2.0",
       "name": "komarima",
-      "version": "0.1.1",
+      "version": "0.2.0",
       "licenses": [
         {
           "expression": "MIT"
         }
       ],
-      "purl": "pkg:npm/komarima@0.1.1"
+      "purl": "pkg:npm/komarima@0.2.0"
     }
   },
   "components": [
@@ -51,42 +51,6 @@
         {
           "type": "website",
           "url": "https://tanstack.com/query"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "bom-ref": "pkg:npm/%40tanstack/react-virtual@3.14.10",
-      "name": "@tanstack/react-virtual",
-      "version": "3.14.10",
-      "licenses": [
-        {
-          "expression": "MIT"
-        }
-      ],
-      "purl": "pkg:npm/%40tanstack/react-virtual@3.14.10",
-      "externalReferences": [
-        {
-          "type": "website",
-          "url": "https://tanstack.com/virtual"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "bom-ref": "pkg:npm/%40tanstack/virtual-core@3.17.8",
-      "name": "@tanstack/virtual-core",
-      "version": "3.17.8",
-      "licenses": [
-        {
-          "expression": "MIT"
-        }
-      ],
-      "purl": "pkg:npm/%40tanstack/virtual-core@3.17.8",
-      "externalReferences": [
-        {
-          "type": "website",
-          "url": "https://tanstack.com/virtual"
         }
       ]
     },
@@ -218,30 +182,6 @@
     },
     {
       "type": "library",
-      "bom-ref": "pkg:npm/tailwindcss@4.3.3",
-      "name": "tailwindcss",
-      "version": "4.3.3",
-      "licenses": [
-        {
-          "expression": "MIT"
-        }
-      ],
-      "purl": "pkg:npm/tailwindcss@4.3.3",
-      "properties": [
-        {
-          "name": "komarima:release-role",
-          "value": "embedded-build-input"
-        }
-      ],
-      "externalReferences": [
-        {
-          "type": "website",
-          "url": "https://tailwindcss.com"
-        }
-      ]
-    },
-    {
-      "type": "library",
       "bom-ref": "pkg:npm/uplot@1.6.32",
       "name": "uplot",
       "version": "1.6.32",
@@ -279,14 +219,12 @@
   ],
   "dependencies": [
     {
-      "ref": "pkg:npm/komarima@0.1.1",
+      "ref": "pkg:npm/komarima@0.2.0",
       "dependsOn": [
         "pkg:npm/%40tanstack/react-query@5.102.8",
-        "pkg:npm/%40tanstack/react-virtual@3.14.10",
         "pkg:npm/react-dom@19.2.8",
         "pkg:npm/react-router-dom@7.18.3",
         "pkg:npm/react@19.2.8",
-        "pkg:npm/tailwindcss@4.3.3",
         "pkg:npm/uplot@1.6.32",
         "pkg:npm/zod@4.5.4"
       ]
@@ -301,18 +239,6 @@
         "pkg:npm/%40tanstack/query-core@5.102.8",
         "pkg:npm/react@19.2.8"
       ]
-    },
-    {
-      "ref": "pkg:npm/%40tanstack/react-virtual@3.14.10",
-      "dependsOn": [
-        "pkg:npm/%40tanstack/virtual-core@3.17.8",
-        "pkg:npm/react-dom@19.2.8",
-        "pkg:npm/react@19.2.8"
-      ]
-    },
-    {
-      "ref": "pkg:npm/%40tanstack/virtual-core@3.17.8",
-      "dependsOn": []
     },
     {
       "ref": "pkg:npm/cookie@1.1.1",
@@ -352,10 +278,6 @@
     },
     {
       "ref": "pkg:npm/set-cookie-parser@2.7.2",
-      "dependsOn": []
-    },
-    {
-      "ref": "pkg:npm/tailwindcss@4.3.3",
       "dependsOn": []
     },
     {

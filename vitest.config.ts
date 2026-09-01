@@ -10,10 +10,6 @@ export default mergeConfig(
       include: ['src/**/*.test.{ts,tsx}', 'tests/**/*.test.{ts,tsx}'],
       clearMocks: true,
       restoreMocks: true,
-      coverage: {
-        provider: 'v8',
-        reporter: ['text', 'html'],
-      },
     },
   }),
 )
