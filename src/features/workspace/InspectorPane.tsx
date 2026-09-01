@@ -1,5 +1,4 @@
-import { Link, useSearchParams } from 'react-router-dom'
-import { ChevronRightIcon, CloseIcon } from '../../ui/Icons'
+import { CloseIcon } from '../../ui/Icons'
 import { useModalFocus } from '../../ui/useModalFocus'
 import { workspaceStatus } from './statusPresentation'
 import type { WorkspaceProbe } from './types'
@@ -36,7 +35,6 @@ export function InspectorPane({
     isOpen && modal,
     onClose,
   )
-  const [searchParams] = useSearchParams()
   const modalProps = {
     'aria-modal': modal || undefined,
     onKeyDown: onModalKeyDown,
@@ -75,10 +73,6 @@ export function InspectorPane({
   }
 
   const state = workspaceStatus(probe)
-  const historySearch = new URLSearchParams(searchParams)
-  historySearch.set('view', 'history')
-  if (!historySearch.has('range')) historySearch.set('range', '6h')
-
   return (
     <aside
       aria-label="探针检查器"
@@ -143,18 +137,6 @@ export function InspectorPane({
             <KeyValueRow label="已运行" value={probe.uptime ?? '—'} />
           </dl>
         </section>
-
-        <Link
-          className="inspector-detail"
-          onClick={modal ? onClose : undefined}
-          to={{
-            pathname: `/instance/${probe.id}`,
-            search: historySearch.toString(),
-          }}
-        >
-          <span>详情</span>
-          <ChevronRightIcon />
-        </Link>
       </div>
     </aside>
   )

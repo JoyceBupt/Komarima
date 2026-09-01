@@ -45,6 +45,7 @@ interface HistoryDetailBaseProps {
   defaultView?: HistoryView
   endTimeMs?: number
   metricLabels?: Readonly<Record<string, string>>
+  rangeNote?: string
   className?: string
   onRetry?: () => void
 }
@@ -178,6 +179,7 @@ export function HistoryDetailView({
   range: controlledRange,
   endTimeMs,
   metricLabels,
+  rangeNote,
   className,
   onRangeChange,
   onRetry,
@@ -313,7 +315,7 @@ export function HistoryDetailView({
             ))}
           </div>
           <p aria-live="polite" className="history-coverage">
-            {coverageLabel(visibleSeries, activeRange)}
+            {rangeNote ?? coverageLabel(visibleSeries, activeRange)}
           </p>
         </>
       ) : null}
@@ -367,9 +369,6 @@ export function HistoryDetailView({
                 }
               >
                 <LazyPingProbeChart
-                  key={`ping:${activeRange}:${
-                    actualCoverage?.startTimeMs ?? 0
-                  }:${actualCoverage?.endTimeMs ?? 0}`}
                   metricLabels={metricLabels}
                   series={pingSeries}
                 />

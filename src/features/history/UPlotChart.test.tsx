@@ -10,6 +10,15 @@ interface FakePlotInstance {
 
 const plotState = vi.hoisted(() => ({
   triggerCursor: null as ((index: number) => void) | null,
+  options: null as {
+    axes?: Array<{
+      values?: (
+        self: FakePlotInstance,
+        splits: number[],
+      ) => Array<string | number>
+    }>
+    series?: Array<{ points?: { show?: boolean; size?: number } }>
+  } | null,
 }))
 
 vi.mock('uplot', () => {
@@ -21,6 +30,13 @@ vi.mock('uplot', () => {
     constructor(
       options: {
         width: number
+        axes?: Array<{
+          values?: (
+            self: FakePlotInstance,
+            splits: number[],
+          ) => Array<string | number>
+        }>
+        series?: Array<{ points?: { show?: boolean; size?: number } }>
         hooks?: {
           setCursor?: Array<(self: FakePlotInstance) => void>
         }
@@ -29,6 +45,7 @@ vi.mock('uplot', () => {
     ) {
       this.width = options.width
       this.data = data
+      plotState.options = options
       plotState.triggerCursor = (index: number) => {
         this.cursor.idx = index
         options.hooks?.setCursor?.forEach((hook) => hook(this))
@@ -48,6 +65,7 @@ vi.mock('uplot', () => {
 afterEach(() => {
   cleanup()
   plotState.triggerCursor = null
+  plotState.options = null
 })
 
 const series: NormalizedMetricSeries = {
@@ -92,5 +110,32 @@ describe('UPlotChart cursor readout', () => {
     expect(
       screen.getByText('时间').parentElement?.querySelector('time'),
     ).toHaveAttribute('datetime', '2026-08-30T03:00:00.000Z')
+  })
+
+  it('shows an explicit marker when only one usable point is available', () => {
+    render(
+      <UPlotChart
+        label="CPU"
+        series={{
+          ...series,
+          unit: 'bytes',
+          points: [
+            { timeMs: series.points[0]!.timeMs, value: null, count: 0 },
+            series.points[2]!,
+          ],
+        }}
+      />,
+    )
+
+    expect(plotState.options?.series?.[1]?.points).toMatchObject({
+      show: true,
+      size: 8,
+    })
+    expect(
+      plotState.options?.axes?.[1]?.values?.(
+        { cursor: { idx: null }, data: [] },
+        [0, 1_048_576],
+      ),
+    ).toEqual(['0 B', '1 MB'])
   })
 })

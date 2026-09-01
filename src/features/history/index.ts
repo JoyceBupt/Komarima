@@ -3,6 +3,10 @@ export {
   type HistoryDetailViewProps,
 } from './HistoryDetailView'
 export {
+  availableMetricHours,
+  historyAvailabilityLabel,
+} from './historyRetention'
+export {
   seriesIdentity,
   type HistoryLoadState,
   type HistoryRange,

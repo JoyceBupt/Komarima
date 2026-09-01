@@ -61,7 +61,6 @@ for (const theme of themes) {
     await page.setViewportSize({ width: 1440, height: 900 })
     await page.goto('/instance/node-online')
     await applyTheme(page, theme)
-    await page.getByRole('link', { name: '详情' }).click()
     await expect(page.getByText('探针历史')).toBeVisible()
     await expect(page.locator('.history-chart-loading')).toHaveCount(0)
     await expect(page.locator('.uplot').first()).toBeVisible()

@@ -135,15 +135,14 @@ export function ProbeWorkspace({
   const filterTrigger = useRef<HTMLButtonElement>(null)
   const searchPopover = useRef<HTMLDivElement>(null)
   const filterPopover = useRef<HTMLDivElement>(null)
+  const editorActive = Boolean(editorContent)
   const [searchOpen, setSearchOpen] = useState(false)
   const [filterOpen, setFilterOpen] = useState(false)
   const [navigatorOpen, setNavigatorOpen] = useState(() =>
     initialPanelState('(min-width: 1100px)'),
   )
   const [inspectorOpen, setInspectorOpen] = useState(
-    () =>
-      (Boolean(uuid) && searchParams.get('view') !== 'history') ||
-      initialPanelState('(min-width: 1440px)'),
+    () => !uuid && initialPanelState('(min-width: 1440px)'),
   )
   const [navigatorDocked, setNavigatorDocked] = useState(() =>
     initialPanelState('(min-width: 1100px)'),
@@ -161,25 +160,17 @@ export function ProbeWorkspace({
     }
     const updateInspector = (event: MediaQueryListEvent) => {
       setInspectorDocked(event.matches)
-      setInspectorOpen(event.matches)
-    }
-    const closeInspectorOnHistoryNavigation = () => {
-      const view = new URLSearchParams(window.location.search).get('view')
-      if (view === 'history' && !inspectorMedia?.matches) {
-        setInspectorOpen(false)
-      }
+      setInspectorOpen(event.matches && !editorActive)
     }
 
     navigatorMedia?.addEventListener('change', updateNavigator)
     inspectorMedia?.addEventListener('change', updateInspector)
-    window.addEventListener('popstate', closeInspectorOnHistoryNavigation)
 
     return () => {
       navigatorMedia?.removeEventListener('change', updateNavigator)
       inspectorMedia?.removeEventListener('change', updateInspector)
-      window.removeEventListener('popstate', closeInspectorOnHistoryNavigation)
     }
-  }, [])
+  }, [editorActive])
 
   useEffect(() => {
     if (searchOpen) {
@@ -290,10 +281,12 @@ export function ProbeWorkspace({
   const overlayOpen = navigatorModal || inspectorModal
 
   const selectProbe = (probe: WorkspaceProbe) => {
-    navigate({ pathname: `/instance/${probe.id}`, search: location.search })
-    if (!initialPanelState('(min-width: 1440px)')) {
-      setInspectorOpen(true)
-    }
+    navigate(
+      { pathname: `/instance/${probe.id}`, search: 'range=6h' },
+      { state: { fromWorkspace: true } },
+    )
+    if (!navigatorDocked) setNavigatorOpen(false)
+    setInspectorOpen(false)
   }
 
   return (

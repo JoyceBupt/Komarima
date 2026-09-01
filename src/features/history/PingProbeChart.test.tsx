@@ -1,4 +1,5 @@
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { NormalizedMetricSeries } from '../../domain'
 import { PingProbeChart } from './PingProbeChart'
@@ -181,6 +182,46 @@ describe('PingProbeChart', () => {
     const secondPlot = plotState.instances[1]
     unmount()
     expect(secondPlot?.destroy).toHaveBeenCalledOnce()
+  })
+
+  it('toggles individual Ping lines without losing their stable colors', async () => {
+    const user = userEvent.setup()
+    render(
+      <PingProbeChart
+        metricLabels={{
+          '["ping.latency_ms","node-a",[["task_id","7"]]]': '东京线路',
+          '["ping.latency_ms","node-a",[["task_id","8"]]]': '法兰克福线路',
+        }}
+        series={[tokyo, frankfurt]}
+      />,
+    )
+
+    const tokyoToggle = screen.getByRole('button', {
+      name: '东京线路，已显示',
+    })
+    const frankfurtToggle = screen.getByRole('button', {
+      name: '法兰克福线路，已显示',
+    })
+    await user.click(tokyoToggle)
+
+    expect(tokyoToggle).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByText('1/2 条线路')).toBeInTheDocument()
+    await waitFor(() => expect(plotState.instances).toHaveLength(2))
+    expect(plotState.instances[1]?.data).toEqual([
+      [startTimeMs / 1_000 + 60, startTimeMs / 1_000 + 120],
+      [31, 29],
+    ])
+    expect(plotState.instances[1]?.options.series[1]?.stroke).toBe(
+      plotState.instances[0]?.options.series[2]?.stroke,
+    )
+
+    await user.click(frankfurtToggle)
+    expect(screen.getByText('未选线路')).toBeInTheDocument()
+    expect(screen.getByText('0/2 条线路')).toBeInTheDocument()
+
+    await user.click(tokyoToggle)
+    await waitFor(() => expect(plotState.instances).toHaveLength(3))
+    expect(screen.getByText('1/2 条线路')).toBeInTheDocument()
   })
 
   it('does not render a card without Ping series', () => {

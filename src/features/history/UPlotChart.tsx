@@ -99,6 +99,7 @@ export function UPlotChart({ label, series, height = 232 }: UPlotChartProps) {
     )
     const border = cssColor(styles, '--km-border', 'rgba(25, 39, 57, 0.11)')
     const data = toAlignedMetricData(series.points)
+    const validPointCount = series.points.filter(isUsableMetricPoint).length
     const width = Math.max(1, Math.floor(container.clientWidth || 640))
 
     const plot = new uPlot(
@@ -152,6 +153,8 @@ export function UPlotChart({ label, series, height = 232 }: UPlotChartProps) {
             grid: { stroke: separator, width: 1 },
             ticks: { stroke: border, width: 1 },
             font: '12px -apple-system, BlinkMacSystemFont, sans-serif',
+            values: (_self, splits) =>
+              splits.map((value) => formatMetricValue(value, series.unit)),
           },
         ],
         series: [
@@ -161,7 +164,13 @@ export function UPlotChart({ label, series, height = 232 }: UPlotChartProps) {
             stroke: accent,
             width: 2,
             spanGaps: false,
-            points: { show: false },
+            points: {
+              show: validPointCount === 1,
+              size: 8,
+              width: 2,
+              stroke: accent,
+              fill: accent,
+            },
           },
         ],
       },

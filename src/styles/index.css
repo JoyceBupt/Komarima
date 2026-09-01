@@ -725,8 +725,11 @@ input:focus-visible {
 }
 
 .history-editor-toolbar button {
+  display: inline-flex;
   height: 32px;
-  padding: 0 11px;
+  padding: 0 10px 0 6px;
+  align-items: center;
+  gap: 2px;
   border-radius: 9px;
   background: transparent;
   color: var(--km-blue);
@@ -736,6 +739,11 @@ input:focus-visible {
   transition:
     background-color 140ms ease,
     transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.history-editor-toolbar button svg {
+  width: 20px;
+  height: 20px;
 }
 
 .history-editor-toolbar button:hover {
@@ -1272,47 +1280,6 @@ input:focus-visible {
   text-align: right;
 }
 
-.inspector-detail {
-  display: flex;
-  height: 56px;
-  padding: 0 18px;
-  align-items: center;
-  justify-content: space-between;
-  border: 1px solid color-mix(in srgb, var(--km-blue) 22%, var(--km-glass-edge));
-  border-radius: var(--radius-km-section);
-  background:
-    linear-gradient(
-      112deg,
-      color-mix(in srgb, var(--km-blue) 9%, transparent),
-      transparent 68%
-    ),
-    var(--km-section);
-  color: var(--km-blue);
-  font-size: 15px;
-  font-weight: 600;
-  text-decoration: none;
-  box-shadow: var(--km-control-shadow);
-  -webkit-backdrop-filter: var(--km-control-filter);
-  backdrop-filter: var(--km-control-filter);
-  transition:
-    background-color 140ms ease,
-    transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-.inspector-detail:hover {
-  background: var(--km-control-hover);
-}
-
-.inspector-detail:active {
-  transform: scale(0.985);
-}
-
-.inspector-detail svg {
-  width: 18px;
-  height: 18px;
-  color: var(--km-text-secondary);
-}
-
 .bottom-statusbar {
   display: grid;
   min-width: 0;
@@ -1735,10 +1702,9 @@ input:focus-visible {
   .history-editor-toolbar,
   .history-view-switch,
   .history-range-switch,
-  .history-ping-heading li,
+  .history-ping-heading li button,
   .history-state button,
   .inspector-section,
-  .inspector-detail,
   .popover-menu,
   .search-popover,
   .panel-scrim {
