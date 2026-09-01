@@ -1,7 +1,7 @@
 {
   "name": "Komarima",
   "short": "Komarima",
-  "description": "An Xcode-inspired probe workspace for Komari.",
+  "description": "An Xcode and Liquid Glass-inspired probe workspace for Komari.",
   "version": "0.1.0",
   "author": "Komarima contributors",
   "preview": "preview.png",

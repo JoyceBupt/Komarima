@@ -25,15 +25,34 @@
   font-family: var(--font-sans);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  --km-canvas: #edf2f8;
-  --km-window: rgb(250 251 253 / 96%);
-  --km-pane: rgb(255 255 255 / 82%);
-  --km-pane-overlay: #ffffff;
-  --km-section: #fbfbfd;
-  --km-control: rgb(255 255 255 / 72%);
-  --km-control-hover: rgb(239 244 250 / 88%);
-  --km-border: rgb(25 39 57 / 11%);
-  --km-separator: rgb(25 39 57 / 8%);
+  --km-canvas: #e9f0f8;
+  --km-window: rgb(248 251 255 / 66%);
+  --km-window-solid: #f7f9fc;
+  --km-toolbar: rgb(255 255 255 / 48%);
+  --km-pane: rgb(255 255 255 / 48%);
+  --km-pane-solid: #f8fafc;
+  --km-pane-overlay: rgb(248 251 255 / 91%);
+  --km-section: rgb(255 255 255 / 64%);
+  --km-section-solid: #fbfcfe;
+  --km-data-surface: rgb(252 253 255 / 82%);
+  --km-data-surface-solid: #fbfcfe;
+  --km-control: rgb(255 255 255 / 58%);
+  --km-control-solid: #f3f6fa;
+  --km-control-hover: rgb(255 255 255 / 82%);
+  --km-border: rgb(43 59 82 / 14%);
+  --km-separator: rgb(43 59 82 / 9%);
+  --km-glass-edge: rgb(255 255 255 / 70%);
+  --km-glass-inner-edge: rgb(55 73 99 / 8%);
+  --km-glass-highlight: rgb(255 255 255 / 86%);
+  --km-glass-filter: blur(34px) saturate(158%);
+  --km-panel-filter: blur(24px) saturate(148%);
+  --km-control-filter: blur(16px) saturate(145%);
+  --km-glass-shadow:
+    inset 0 1px 0 var(--km-glass-highlight),
+    inset 0 0 0 1px var(--km-glass-inner-edge), 0 12px 34px rgb(48 67 94 / 10%);
+  --km-control-shadow:
+    inset 0 1px 0 var(--km-glass-highlight),
+    inset 0 0 0 1px var(--km-glass-inner-edge), 0 6px 18px rgb(48 67 94 / 8%);
   --km-text-primary: #17191d;
   --km-text-secondary: #657083;
   --km-text-tertiary: #697586;
@@ -49,20 +68,41 @@
   --km-disk: #32ade6;
   --km-ping: #ff9500;
   --km-track: rgb(101 112 131 / 24%);
-  --km-shadow: 0 20px 48px rgb(55 72 96 / 14%), 0 2px 8px rgb(55 72 96 / 8%);
+  --km-shadow:
+    0 30px 80px rgb(45 64 91 / 18%), 0 8px 24px rgb(45 64 91 / 10%),
+    inset 0 1px 0 rgb(255 255 255 / 82%);
 }
 
 [data-theme='dark'] {
   color-scheme: dark;
-  --km-canvas: #0b0f15;
-  --km-window: #11161e;
-  --km-pane: #12171f;
-  --km-pane-overlay: #12171f;
-  --km-section: #191e27;
-  --km-control: rgb(22 27 36 / 82%);
-  --km-control-hover: rgb(32 39 50 / 92%);
-  --km-border: rgb(255 255 255 / 14%);
+  --km-canvas: #070c13;
+  --km-window: rgb(15 21 30 / 68%);
+  --km-window-solid: #101720;
+  --km-toolbar: rgb(28 35 47 / 50%);
+  --km-pane: rgb(24 31 42 / 50%);
+  --km-pane-solid: #151c26;
+  --km-pane-overlay: rgb(17 24 34 / 92%);
+  --km-section: rgb(39 47 60 / 58%);
+  --km-section-solid: #1d2531;
+  --km-data-surface: rgb(18 24 33 / 84%);
+  --km-data-surface-solid: #141b24;
+  --km-control: rgb(48 57 72 / 48%);
+  --km-control-solid: #252e3b;
+  --km-control-hover: rgb(67 78 96 / 68%);
+  --km-border: rgb(255 255 255 / 16%);
   --km-separator: rgb(255 255 255 / 10%);
+  --km-glass-edge: rgb(255 255 255 / 16%);
+  --km-glass-inner-edge: rgb(255 255 255 / 5%);
+  --km-glass-highlight: rgb(255 255 255 / 14%);
+  --km-glass-filter: blur(36px) saturate(154%);
+  --km-panel-filter: blur(26px) saturate(146%);
+  --km-control-filter: blur(18px) saturate(145%);
+  --km-glass-shadow:
+    inset 0 1px 0 var(--km-glass-highlight),
+    inset 0 0 0 1px var(--km-glass-inner-edge), 0 18px 46px rgb(0 0 0 / 24%);
+  --km-control-shadow:
+    inset 0 1px 0 var(--km-glass-highlight),
+    inset 0 0 0 1px var(--km-glass-inner-edge), 0 8px 22px rgb(0 0 0 / 18%);
   --km-text-primary: #f4f6f9;
   --km-text-secondary: #aab2c0;
   --km-text-tertiary: #7d8795;
@@ -78,21 +118,42 @@
   --km-disk: #64d2ff;
   --km-ping: #ff9f0a;
   --km-track: rgb(170 178 192 / 28%);
-  --km-shadow: 0 22px 60px rgb(0 0 0 / 46%), 0 0 0 1px rgb(255 255 255 / 3%);
+  --km-shadow:
+    0 34px 92px rgb(0 0 0 / 54%), 0 10px 28px rgb(0 0 0 / 34%),
+    inset 0 1px 0 rgb(255 255 255 / 11%);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
     color-scheme: dark;
-    --km-canvas: #0b0f15;
-    --km-window: #11161e;
-    --km-pane: #12171f;
-    --km-pane-overlay: #12171f;
-    --km-section: #191e27;
-    --km-control: rgb(22 27 36 / 82%);
-    --km-control-hover: rgb(32 39 50 / 92%);
-    --km-border: rgb(255 255 255 / 14%);
+    --km-canvas: #070c13;
+    --km-window: rgb(15 21 30 / 68%);
+    --km-window-solid: #101720;
+    --km-toolbar: rgb(28 35 47 / 50%);
+    --km-pane: rgb(24 31 42 / 50%);
+    --km-pane-solid: #151c26;
+    --km-pane-overlay: rgb(17 24 34 / 92%);
+    --km-section: rgb(39 47 60 / 58%);
+    --km-section-solid: #1d2531;
+    --km-data-surface: rgb(18 24 33 / 84%);
+    --km-data-surface-solid: #141b24;
+    --km-control: rgb(48 57 72 / 48%);
+    --km-control-solid: #252e3b;
+    --km-control-hover: rgb(67 78 96 / 68%);
+    --km-border: rgb(255 255 255 / 16%);
     --km-separator: rgb(255 255 255 / 10%);
+    --km-glass-edge: rgb(255 255 255 / 16%);
+    --km-glass-inner-edge: rgb(255 255 255 / 5%);
+    --km-glass-highlight: rgb(255 255 255 / 14%);
+    --km-glass-filter: blur(36px) saturate(154%);
+    --km-panel-filter: blur(26px) saturate(146%);
+    --km-control-filter: blur(18px) saturate(145%);
+    --km-glass-shadow:
+      inset 0 1px 0 var(--km-glass-highlight),
+      inset 0 0 0 1px var(--km-glass-inner-edge), 0 18px 46px rgb(0 0 0 / 24%);
+    --km-control-shadow:
+      inset 0 1px 0 var(--km-glass-highlight),
+      inset 0 0 0 1px var(--km-glass-inner-edge), 0 8px 22px rgb(0 0 0 / 18%);
     --km-text-primary: #f4f6f9;
     --km-text-secondary: #aab2c0;
     --km-text-tertiary: #7d8795;
@@ -108,7 +169,9 @@
     --km-disk: #64d2ff;
     --km-ping: #ff9f0a;
     --km-track: rgb(170 178 192 / 28%);
-    --km-shadow: 0 22px 60px rgb(0 0 0 / 46%), 0 0 0 1px rgb(255 255 255 / 3%);
+    --km-shadow:
+      0 34px 92px rgb(0 0 0 / 54%), 0 10px 28px rgb(0 0 0 / 34%),
+      inset 0 1px 0 rgb(255 255 255 / 11%);
   }
 }
 
@@ -153,24 +216,41 @@ input:focus-visible {
 }
 
 .km-app {
+  position: relative;
+  isolation: isolate;
   min-height: 100dvh;
   padding: 24px;
   background:
-    radial-gradient(
-      circle at 50% -20%,
-      rgb(255 255 255 / 52%),
-      transparent 44%
-    ),
+    radial-gradient(circle at 8% 2%, rgb(0 122 255 / 15%), transparent 34%),
+    radial-gradient(circle at 91% 6%, rgb(175 82 222 / 11%), transparent 31%),
+    radial-gradient(circle at 70% 96%, rgb(50 173 230 / 10%), transparent 36%),
+    linear-gradient(145deg, #f2f7fc 0%, #e7eef7 52%, #eef3f9 100%),
     var(--km-canvas);
 }
 
 [data-theme='dark'] .km-app {
   background:
-    radial-gradient(circle at 50% -28%, rgb(56 72 92 / 14%), transparent 44%),
+    radial-gradient(circle at 8% 0%, rgb(10 132 255 / 22%), transparent 34%),
+    radial-gradient(circle at 91% 3%, rgb(191 90 242 / 14%), transparent 31%),
+    radial-gradient(circle at 72% 100%, rgb(48 209 88 / 7%), transparent 35%),
+    linear-gradient(145deg, #09121d 0%, #060b12 54%, #0a1018 100%),
     var(--km-canvas);
 }
 
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .km-app {
+    background:
+      radial-gradient(circle at 8% 0%, rgb(10 132 255 / 22%), transparent 34%),
+      radial-gradient(circle at 91% 3%, rgb(191 90 242 / 14%), transparent 31%),
+      radial-gradient(circle at 72% 100%, rgb(48 209 88 / 7%), transparent 35%),
+      linear-gradient(145deg, #09121d 0%, #060b12 54%, #0a1018 100%),
+      var(--km-canvas);
+  }
+}
+
 .km-window {
+  position: relative;
+  isolation: isolate;
   display: grid;
   width: min(100%, 1720px);
   height: calc(100dvh - 48px);
@@ -180,10 +260,14 @@ input:focus-visible {
   overflow: hidden;
   grid-template-rows: 72px minmax(0, 1fr) 58px;
   gap: 8px;
-  border: 1px solid var(--km-border);
+  border: 1px solid var(--km-glass-edge);
   border-radius: var(--radius-km-window);
-  background: var(--km-window);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 10%), transparent 24%),
+    var(--km-window);
   box-shadow: var(--km-shadow);
+  -webkit-backdrop-filter: var(--km-glass-filter);
+  backdrop-filter: var(--km-glass-filter);
 }
 
 .km-gate-window {
@@ -203,9 +287,14 @@ input:focus-visible {
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  border: 1px solid var(--km-border);
+  border: 1px solid var(--km-glass-edge);
   border-radius: var(--radius-km-pane);
-  background: var(--km-pane);
+  background:
+    linear-gradient(160deg, rgb(255 255 255 / 10%), transparent 36%),
+    var(--km-pane);
+  box-shadow: var(--km-glass-shadow);
+  -webkit-backdrop-filter: var(--km-panel-filter);
+  backdrop-filter: var(--km-panel-filter);
   text-align: center;
 }
 
@@ -244,6 +333,20 @@ input:focus-visible {
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 34%),
+    0 8px 20px color-mix(in srgb, var(--km-blue) 24%, transparent);
+  transition:
+    filter 140ms ease,
+    transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.gate-action:hover {
+  filter: brightness(1.06);
+}
+
+.gate-action:active {
+  transform: scale(0.97);
 }
 
 .gate-statusbar {
@@ -264,6 +367,25 @@ input:focus-visible {
   padding: 0 11px;
   grid-template-columns: minmax(270px, 1fr) auto minmax(330px, 1fr);
   align-items: center;
+  border: 1px solid var(--km-glass-edge);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 11%), transparent 62%),
+    var(--km-toolbar);
+  box-shadow: var(--km-glass-shadow);
+  -webkit-backdrop-filter: var(--km-panel-filter);
+  backdrop-filter: var(--km-panel-filter);
+}
+
+.gate-toolbar {
+  border: 1px solid var(--km-glass-edge);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 11%), transparent 62%),
+    var(--km-toolbar);
+  box-shadow: var(--km-glass-shadow);
+  -webkit-backdrop-filter: var(--km-panel-filter);
+  backdrop-filter: var(--km-panel-filter);
 }
 
 .toolbar-start,
@@ -282,9 +404,14 @@ input:focus-visible {
 .panel-toggle-group {
   flex: 0 0 auto;
   overflow: hidden;
-  border: 1px solid var(--km-border);
+  border: 1px solid var(--km-glass-edge);
   border-radius: var(--radius-km-control);
-  background: var(--km-control);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 12%), transparent 72%),
+    var(--km-control);
+  box-shadow: var(--km-control-shadow);
+  -webkit-backdrop-filter: var(--km-control-filter);
+  backdrop-filter: var(--km-control-filter);
 }
 
 .panel-toggle-group button {
@@ -296,7 +423,9 @@ input:focus-visible {
   background: transparent;
   color: var(--km-text-primary);
   cursor: pointer;
-  transition: background-color 140ms ease;
+  transition:
+    background-color 140ms ease,
+    transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .panel-toggle-group button + button {
@@ -305,6 +434,10 @@ input:focus-visible {
 
 .panel-toggle-group button:hover {
   background: var(--km-control-hover);
+}
+
+.panel-toggle-group button:active {
+  transform: scale(0.94);
 }
 
 .panel-toggle-group svg {
@@ -346,22 +479,36 @@ input:focus-visible {
   padding: 0 16px;
   justify-content: center;
   gap: 8px;
-  border: 1px solid var(--km-border);
+  border: 1px solid var(--km-glass-edge);
   border-radius: var(--radius-km-control);
-  background: var(--km-control);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 13%), transparent 72%),
+    var(--km-control);
   color: var(--km-text-primary);
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
   transition:
     background-color 140ms ease,
-    border-color 140ms ease;
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow: var(--km-control-shadow);
+  -webkit-backdrop-filter: var(--km-control-filter);
+  backdrop-filter: var(--km-control-filter);
 }
 
 .toolbar-button:hover,
 .toolbar-button.is-active {
   border-color: color-mix(in srgb, var(--km-blue) 25%, var(--km-border));
   background: var(--km-control-hover);
+  box-shadow:
+    var(--km-control-shadow),
+    0 0 0 1px color-mix(in srgb, var(--km-blue) 9%, transparent);
+}
+
+.toolbar-button:active {
+  transform: scale(0.96);
 }
 
 .toolbar-icon {
@@ -377,10 +524,16 @@ input:focus-visible {
   right: 0;
   z-index: 80;
   padding: 6px;
-  border: 1px solid var(--km-border);
+  border: 1px solid var(--km-glass-edge);
   border-radius: var(--radius-km-section);
-  background: var(--km-section);
-  box-shadow: 0 14px 36px rgb(23 31 43 / 18%);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 12%), transparent 58%),
+    var(--km-pane-overlay);
+  box-shadow:
+    inset 0 1px 0 var(--km-glass-highlight),
+    0 18px 48px rgb(13 23 37 / 24%);
+  -webkit-backdrop-filter: var(--km-glass-filter);
+  backdrop-filter: var(--km-glass-filter);
 }
 
 .popover-menu {
@@ -410,7 +563,7 @@ input:focus-visible {
   border: 1px solid var(--km-border);
   border-radius: 9px;
   outline: none;
-  background: var(--km-control);
+  background: var(--km-control-solid);
   color: var(--km-text-primary);
   font-size: 14px;
 }
@@ -513,15 +666,27 @@ input:focus-visible {
 
 .workspace-pane,
 .bottom-statusbar {
-  border: 1px solid var(--km-border);
+  border: 1px solid var(--km-glass-edge);
   border-radius: var(--radius-km-pane);
-  background: var(--km-pane);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 7%), transparent 32%),
+    var(--km-pane);
+  box-shadow: var(--km-glass-shadow);
+  -webkit-backdrop-filter: var(--km-panel-filter);
+  backdrop-filter: var(--km-panel-filter);
 }
 
 .workspace-pane {
   min-width: 0;
   min-height: 0;
   overflow: hidden;
+}
+
+.editor-pane,
+.history-editor-shell {
+  background: var(--km-data-surface);
+  -webkit-backdrop-filter: blur(18px) saturate(132%);
+  backdrop-filter: blur(18px) saturate(132%);
 }
 
 .editor-content-host {
@@ -537,15 +702,22 @@ input:focus-visible {
 
 .history-editor-toolbar {
   position: sticky;
-  top: 0;
+  top: 8px;
   z-index: 5;
   display: flex;
   min-height: 44px;
-  padding: 6px 12px;
+  width: calc(100% - 16px);
+  margin: 8px 8px 0;
+  padding: 6px 8px;
   align-items: center;
-  border-bottom: 1px solid var(--km-separator);
-  background: color-mix(in srgb, var(--km-pane) 92%, transparent);
-  backdrop-filter: blur(18px);
+  border: 1px solid var(--km-glass-edge);
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 12%), transparent 70%),
+    var(--km-control);
+  box-shadow: var(--km-control-shadow);
+  -webkit-backdrop-filter: var(--km-control-filter);
+  backdrop-filter: var(--km-control-filter);
 }
 
 .history-editor-toolbar button {
@@ -557,16 +729,26 @@ input:focus-visible {
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .history-editor-toolbar button:hover {
   background: var(--km-selected);
 }
 
+.history-editor-toolbar button:active {
+  transform: scale(0.96);
+}
+
 .navigator-pane,
 .inspector-pane {
   opacity: 0;
   visibility: hidden;
+  background:
+    linear-gradient(160deg, rgb(255 255 255 / 9%), transparent 36%),
+    var(--km-pane);
   transition:
     opacity 140ms ease,
     transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -614,6 +796,7 @@ input:focus-visible {
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid var(--km-separator);
+  background: linear-gradient(180deg, rgb(255 255 255 / 6%), transparent 82%);
 }
 
 .pane-heading h2,
@@ -682,7 +865,17 @@ input:focus-visible {
 
 .tree-row-all.is-selected {
   border-color: var(--km-selected-border);
-  box-shadow: inset 3px 0 var(--km-blue);
+  background:
+    linear-gradient(
+      110deg,
+      color-mix(in srgb, var(--km-blue) 11%, transparent),
+      transparent 72%
+    ),
+    var(--km-selected);
+  box-shadow:
+    inset 3px 0 var(--km-blue),
+    inset 0 1px 0 color-mix(in srgb, var(--km-glass-highlight) 68%, transparent),
+    0 5px 16px color-mix(in srgb, var(--km-blue) 8%, transparent);
 }
 
 .tree-group {
@@ -821,8 +1014,17 @@ input:focus-visible {
 .probe-row.is-selected {
   border-color: var(--km-selected-border);
   border-radius: var(--radius-km-selection);
-  background: var(--km-selected);
-  box-shadow: inset 3px 0 var(--km-blue);
+  background:
+    linear-gradient(
+      105deg,
+      color-mix(in srgb, var(--km-blue) 12%, transparent),
+      transparent 74%
+    ),
+    var(--km-selected);
+  box-shadow:
+    inset 3px 0 var(--km-blue),
+    inset 0 1px 0 color-mix(in srgb, var(--km-glass-highlight) 68%, transparent),
+    0 6px 18px color-mix(in srgb, var(--km-blue) 9%, transparent);
 }
 
 .probe-row:focus-visible {
@@ -1021,9 +1223,14 @@ input:focus-visible {
 .inspector-section {
   margin-bottom: 12px;
   padding: 0 18px;
-  border: 1px solid var(--km-border);
+  border: 1px solid var(--km-glass-edge);
   border-radius: var(--radius-km-section);
-  background: var(--km-section);
+  background:
+    linear-gradient(155deg, rgb(255 255 255 / 7%), transparent 38%),
+    var(--km-section);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--km-glass-highlight) 76%, transparent),
+    0 5px 16px rgb(21 34 51 / 5%);
 }
 
 .inspector-section h3 {
@@ -1067,18 +1274,33 @@ input:focus-visible {
   padding: 0 18px;
   align-items: center;
   justify-content: space-between;
-  border: 1px solid var(--km-border);
+  border: 1px solid color-mix(in srgb, var(--km-blue) 22%, var(--km-glass-edge));
   border-radius: var(--radius-km-section);
-  background: var(--km-section);
+  background:
+    linear-gradient(
+      112deg,
+      color-mix(in srgb, var(--km-blue) 9%, transparent),
+      transparent 68%
+    ),
+    var(--km-section);
   color: var(--km-blue);
   font-size: 15px;
   font-weight: 600;
   text-decoration: none;
-  transition: background-color 140ms ease;
+  box-shadow: var(--km-control-shadow);
+  -webkit-backdrop-filter: var(--km-control-filter);
+  backdrop-filter: var(--km-control-filter);
+  transition:
+    background-color 140ms ease,
+    transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .inspector-detail:hover {
   background: var(--km-control-hover);
+}
+
+.inspector-detail:active {
+  transform: scale(0.985);
 }
 
 .inspector-detail svg {
@@ -1117,6 +1339,8 @@ input:focus-visible {
   display: none;
   padding: 0;
   background: rgb(9 13 19 / 36%);
+  -webkit-backdrop-filter: blur(5px) saturate(108%);
+  backdrop-filter: blur(5px) saturate(108%);
   cursor: default;
 }
 
@@ -1144,9 +1368,15 @@ input:focus-visible {
     z-index: 20;
     grid-column: 1 / -1;
     width: min(360px, calc(100% - 20px));
-    background: var(--km-pane-overlay);
+    background:
+      linear-gradient(160deg, rgb(255 255 255 / 8%), transparent 34%),
+      var(--km-pane-overlay);
+    -webkit-backdrop-filter: var(--km-glass-filter);
+    backdrop-filter: var(--km-glass-filter);
     transform: translateX(calc(100% + 12px));
-    box-shadow: -18px 0 44px rgb(19 27 38 / 18%);
+    box-shadow:
+      inset 1px 0 0 var(--km-glass-highlight),
+      -18px 0 48px rgb(19 27 38 / 22%);
   }
 
   .inspector-pane.is-open {
@@ -1204,8 +1434,14 @@ input:focus-visible {
     top: 0;
     bottom: 0;
     z-index: 20;
-    background: var(--km-pane-overlay);
-    box-shadow: 18px 0 44px rgb(19 27 38 / 18%);
+    background:
+      linear-gradient(160deg, rgb(255 255 255 / 8%), transparent 34%),
+      var(--km-pane-overlay);
+    box-shadow:
+      inset -1px 0 0 var(--km-glass-highlight),
+      18px 0 48px rgb(19 27 38 / 22%);
+    -webkit-backdrop-filter: var(--km-glass-filter);
+    backdrop-filter: var(--km-glass-filter);
   }
 
   .navigator-pane {
@@ -1245,7 +1481,21 @@ input:focus-visible {
 @media (max-width: 767px) {
   .km-app {
     padding: 0;
-    background: var(--km-canvas);
+    background:
+      radial-gradient(circle at 3% 0%, rgb(0 122 255 / 12%), transparent 42%),
+      radial-gradient(circle at 100% 4%, rgb(175 82 222 / 8%), transparent 38%),
+      var(--km-canvas);
+  }
+
+  [data-theme='dark'] .km-app {
+    background:
+      radial-gradient(circle at 3% 0%, rgb(10 132 255 / 18%), transparent 42%),
+      radial-gradient(
+        circle at 100% 4%,
+        rgb(191 90 242 / 10%),
+        transparent 38%
+      ),
+      var(--km-canvas);
   }
 
   .km-window {
@@ -1258,6 +1508,8 @@ input:focus-visible {
     border: 0;
     border-radius: 0;
     box-shadow: none;
+    -webkit-backdrop-filter: blur(22px) saturate(140%);
+    backdrop-filter: blur(22px) saturate(140%);
   }
 
   .top-toolbar {
@@ -1398,6 +1650,19 @@ input:focus-visible {
   }
 }
 
+@media (max-width: 767px) and (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .km-app {
+    background:
+      radial-gradient(circle at 3% 0%, rgb(10 132 255 / 18%), transparent 42%),
+      radial-gradient(
+        circle at 100% 4%,
+        rgb(191 90 242 / 10%),
+        transparent 38%
+      ),
+      var(--km-canvas);
+  }
+}
+
 @media (max-width: 349px) {
   .brand {
     display: none;
@@ -1418,5 +1683,80 @@ input:focus-visible {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+  }
+}
+
+@supports not (
+  (-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))
+) {
+  :root {
+    --km-window: var(--km-window-solid);
+    --km-toolbar: var(--km-pane-solid);
+    --km-pane: var(--km-pane-solid);
+    --km-pane-overlay: var(--km-pane-solid);
+    --km-section: var(--km-section-solid);
+    --km-data-surface: var(--km-data-surface-solid);
+    --km-control: var(--km-control-solid);
+    --km-control-hover: var(--km-control-solid);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --km-window: var(--km-window-solid);
+    --km-toolbar: var(--km-pane-solid);
+    --km-pane: var(--km-pane-solid);
+    --km-pane-overlay: var(--km-pane-solid);
+    --km-section: var(--km-section-solid);
+    --km-data-surface: var(--km-data-surface-solid);
+    --km-control: var(--km-control-solid);
+    --km-control-hover: var(--km-control-solid);
+  }
+
+  .km-app,
+  [data-theme='dark'] .km-app {
+    background: var(--km-canvas);
+  }
+
+  .km-window,
+  .top-toolbar,
+  .gate-toolbar,
+  .workspace-gate,
+  .workspace-pane,
+  .bottom-statusbar,
+  .navigator-pane,
+  .inspector-pane,
+  .panel-toggle-group,
+  .toolbar-button,
+  .history-editor-toolbar,
+  .history-view-switch,
+  .history-range-switch,
+  .history-ping-heading li,
+  .history-state button,
+  .inspector-section,
+  .inspector-detail,
+  .popover-menu,
+  .search-popover,
+  .panel-scrim {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .km-window,
+  .top-toolbar,
+  .gate-toolbar,
+  .workspace-gate,
+  .workspace-pane,
+  .bottom-statusbar,
+  .panel-toggle-group,
+  .toolbar-button,
+  .popover-menu,
+  .search-popover,
+  .inspector-section,
+  .history-summary,
+  .history-chart-card {
+    box-shadow: none;
   }
 }
