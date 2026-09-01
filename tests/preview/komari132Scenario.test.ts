@@ -274,7 +274,7 @@ describe('Komari 1.3.2 preview scenario', () => {
         method: 'public:queryMetrics',
         params: {
           metric_key: 'cpu.usage',
-          entity_id: 'node-0499',
+          entity_id: 'node-online',
           hours: 168,
           max_points: 3,
         },
@@ -282,33 +282,14 @@ describe('Komari 1.3.2 preview scenario', () => {
       metricQueryResultSchema,
     )
     expect(capped.series[0]).toMatchObject({
-      entity_id: 'node-0499',
+      entity_id: 'node-online',
       max_points: 3,
       count: 3,
     })
     expect(JSON.stringify(metricQueryFixture)).toBe(fixtureBefore)
   })
 
-  it('supports scale and Ping fault options without widening failures', () => {
-    const scale = createKomari132Scenario({ preset: 'scale-500' })
-    const nodes = resultFrom(
-      scale.handleRpc({ id: 1, method: 'public:getNodesInformation' }),
-      publicNodesSchema,
-    )
-    expect(nodes).toHaveLength(500)
-    expect(new Set(nodes.map((node) => node.uuid))).toHaveLength(500)
-
-    const selected = resultFrom(
-      scale.handleRpc({
-        id: 2,
-        method: 'common:getNodesLatestStatus',
-        params: { uuids: ['node-0000', 'node-0499', 'unknown'] },
-      }),
-      latestStatusMapSchema,
-    )
-    expect(Object.keys(selected)).toEqual(['node-0000', 'node-0499'])
-    expect(selected['node-0499']?.client).toBe('node-0499')
-
+  it('supports Ping fault options without widening failures', () => {
     const pingScenario = createKomari132Scenario({
       unassignedDefaultPing: true,
       failPingTasks: true,
@@ -351,10 +332,6 @@ describe('Komari 1.3.2 preview scenario', () => {
       expect.objectContaining({ id: 8, default_on: true, clients: [] }),
       expect.objectContaining({ id: 12, default_on: true, clients: [] }),
     ])
-    expect(() => createKomari132Scenario({ nodeCount: 0 })).toThrow('1 to 500')
-    expect(() => createKomari132Scenario({ nodeCount: 501 })).toThrow(
-      '1 to 500',
-    )
   })
 
   it('round-trips scenario responses through KomariApiClient contracts', async () => {

@@ -55,11 +55,3 @@ export interface WorkspaceProbe {
   billing: WorkspaceBilling | null
   uptime: string | null
 }
-
-export type ProbeSortKey = 'name' | 'cpu' | 'memory' | 'disk' | 'ping'
-export type ProbeSortDirection = 'ascending' | 'descending'
-
-export interface ProbeSort {
-  key: ProbeSortKey
-  direction: ProbeSortDirection
-}

@@ -6,7 +6,6 @@ import process from 'node:process'
 
 const root = resolve(import.meta.dirname, '..')
 const checkOnly = process.argv.includes('--check')
-const embeddedBuildInputs = new Set(['tailwindcss'])
 
 function fail(message) {
   throw new Error(message)
@@ -68,23 +67,15 @@ function readLicenseReport(args) {
   return JSON.parse(raw)
 }
 
-async function addLicensedPackages(packages, licenses, include, releaseRole) {
+async function addLicensedPackages(packages, licenses) {
   for (const entries of Object.values(licenses)) {
     for (const entry of entries) {
-      if (!include(entry)) continue
-
       for (const packagePath of entry.paths) {
         const packageJson = JSON.parse(
           await readFile(resolve(packagePath, 'package.json'), 'utf8'),
         )
         const key = `${packageJson.name}@${packageJson.version}`
-        const existing = packages.get(key)
-        if (existing) {
-          if (releaseRole === 'embedded-build-input') {
-            existing.releaseRole = releaseRole
-          }
-          continue
-        }
+        if (packages.has(key)) continue
 
         const source = normalizeSource(
           packageJson.homepage || packageJson.repository || entry.homepage,
@@ -95,7 +86,6 @@ async function addLicensedPackages(packages, licenses, include, releaseRole) {
           license: packageJson.license || entry.license,
           source,
           licenseText: await readLicenseText(packagePath),
-          releaseRole,
         })
       }
     }
@@ -104,29 +94,7 @@ async function addLicensedPackages(packages, licenses, include, releaseRole) {
 
 async function collectReleasePackages() {
   const packages = new Map()
-  await addLicensedPackages(
-    packages,
-    readLicenseReport(['--prod']),
-    () => true,
-    'runtime-dependency',
-  )
-  await addLicensedPackages(
-    packages,
-    readLicenseReport([]),
-    (entry) => embeddedBuildInputs.has(entry.name),
-    'embedded-build-input',
-  )
-  for (const name of embeddedBuildInputs) {
-    if (
-      ![...packages.values()].some(
-        (dependency) =>
-          dependency.name === name &&
-          dependency.releaseRole === 'embedded-build-input',
-      )
-    ) {
-      fail(`missing embedded build input license: ${name}`)
-    }
-  }
+  await addLicensedPackages(packages, readLicenseReport(['--prod']))
 
   return [...packages.values()].sort(
     (left, right) =>
@@ -174,14 +142,10 @@ function collectDependencyGraph() {
 function createNotices(packages) {
   const sections = packages.map((dependency) => {
     const source = dependency.source ? `\nSource: ${dependency.source}` : ''
-    const releaseRole =
-      dependency.releaseRole === 'embedded-build-input'
-        ? '\nRelease role: Embedded build input'
-        : ''
-    return `## ${dependency.name} ${dependency.version}\n\nLicense: ${dependency.license}${source}${releaseRole}\n\n\`\`\`text\n${dependency.licenseText}\n\`\`\``
+    return `## ${dependency.name} ${dependency.version}\n\nLicense: ${dependency.license}${source}\n\n\`\`\`text\n${dependency.licenseText}\n\`\`\``
   })
 
-  return `# Third-Party Notices\n\nKomarima includes the following runtime dependencies and build inputs whose code is embedded in the release artifact. The CycloneDX SBOM records the same release dependency set.\n\n${sections.join('\n\n')}\n`
+  return `# Third-Party Notices\n\nKomarima includes the following runtime dependencies. The CycloneDX SBOM records the same release dependency set.\n\n${sections.join('\n\n')}\n`
 }
 
 async function createSbom(packages) {
@@ -190,12 +154,7 @@ async function createSbom(packages) {
   )
   const rootRef = `pkg:npm/${encodeURIComponent(project.name)}@${project.version}`
   const { directRefs, graph } = collectDependencyGraph()
-  const embeddedBuildInputRefs = packages
-    .filter((dependency) => dependency.releaseRole === 'embedded-build-input')
-    .map((dependency) => packageUrl(dependency.name, dependency.version))
-  const releaseRefs = [
-    ...new Set([...directRefs, ...embeddedBuildInputRefs]),
-  ].sort()
+  const releaseRefs = [...new Set(directRefs)].sort()
   const components = packages.map((dependency) => {
     const component = {
       type: 'library',
@@ -204,14 +163,6 @@ async function createSbom(packages) {
       version: dependency.version,
       licenses: [{ expression: dependency.license }],
       purl: packageUrl(dependency.name, dependency.version),
-    }
-    if (dependency.releaseRole === 'embedded-build-input') {
-      component.properties = [
-        {
-          name: 'komarima:release-role',
-          value: dependency.releaseRole,
-        },
-      ]
     }
     if (dependency.source) {
       component.externalReferences = [

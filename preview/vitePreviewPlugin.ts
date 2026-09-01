@@ -23,11 +23,7 @@ export interface PreviewRequest {
   body?: string
 }
 
-const previewPresets: readonly Komari132ScenarioPreset[] = [
-  'public',
-  'private',
-  'scale-500',
-]
+const previewPresets: readonly Komari132ScenarioPreset[] = ['public', 'private']
 const restPaths = new Set(['/api/public', '/api/me'])
 const maximumRequestBodyBytes = 64 * 1024
 

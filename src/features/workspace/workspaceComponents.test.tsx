@@ -62,7 +62,7 @@ describe('ProbeOverviewPane', () => {
     expect(screen.queryByText('等待探针接入')).not.toBeInTheDocument()
   })
 
-  it('sorts list metrics and opens a row directly', async () => {
+  it('keeps server order and opens a row directly', async () => {
     const user = userEvent.setup()
     const onSelect = vi.fn()
     render(
@@ -77,21 +77,17 @@ describe('ProbeOverviewPane', () => {
       />,
     )
 
-    const cpuSort = screen.getByRole('button', { name: '按CPU降序排列' })
-    await user.click(cpuSort)
-    expect(cpuSort).toHaveAccessibleName('CPU，当前降序，切换为升序')
-    expect(screen.getByLabelText('CPU81%')).toHaveClass('is-compact')
     expect(
       within(screen.getByRole('group', { name: '探针列表' }))
         .getAllByRole('button')
         .map(
           (button) => button.querySelector('.probe-copy strong')?.textContent,
         ),
-    ).toEqual(['High', 'Low', 'Missing'])
+    ).toEqual(['Missing', 'Low', 'High'])
 
-    await user.click(screen.getByRole('button', { name: /High/ }))
+    await user.click(screen.getByRole('button', { name: /Low/ }))
     expect(onSelect).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'high' }),
+      expect.objectContaining({ id: 'low' }),
     )
   })
 

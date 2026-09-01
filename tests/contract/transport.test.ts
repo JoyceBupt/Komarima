@@ -6,7 +6,6 @@ import {
   RequestTimeoutError,
   RpcResponseError,
 } from '../../src/api/errors'
-import { capabilityFromError } from '../../src/domain'
 import meGuestFixture from '../fixtures/komari-1.3.2/me-guest.json'
 import metricDefinitionsFixture from '../fixtures/komari-1.3.2/metric-definitions-rpc.json'
 import metricQueryFixture from '../fixtures/komari-1.3.2/metric-query-rpc.json'
@@ -143,7 +142,7 @@ describe('Komari 1.3.2 transports', () => {
       rpcError = error
     }
     expect(rpcError).toBeInstanceOf(RpcResponseError)
-    expect(capabilityFromError(rpcError)).toBe('denied')
+    expect(rpcError).toMatchObject({ code: -32041 })
   })
 
   it('fails fast when a successful response violates the contract', async () => {
@@ -294,11 +293,5 @@ describe('Komari 1.3.2 transports', () => {
       hours: 1,
     })
     expect(result.stats[1]?.latest).toBeUndefined()
-  })
-
-  it('classifies RPC unimplemented as unsupported', () => {
-    expect(
-      capabilityFromError(new RpcResponseError(-32050, 'not implemented')),
-    ).toBe('unsupported')
   })
 })
