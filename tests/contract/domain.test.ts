@@ -36,6 +36,18 @@ describe('probe normalization', () => {
     const online = probes.get('node-online')
 
     expect(online?.tags).toEqual(['production', 'asia'])
+    expect(online?.publicRemark).toBe('Public edge')
+    expect(online?.billing).toEqual({
+      price: 8.5,
+      cycleDays: 30,
+      autoRenewal: true,
+      currency: '$',
+      expiresAt: null,
+    })
+    expect(online?.trafficLimit).toEqual({
+      bytes: 1_099_511_627_776,
+      type: 'sum',
+    })
     expect(online).not.toHaveProperty('ipv4')
   })
 

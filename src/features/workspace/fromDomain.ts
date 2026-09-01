@@ -6,14 +6,31 @@ import {
   type NormalizedRatio,
   type NormalizedValue,
   type ProbePing,
+  type ProbeTrafficLimitType,
 } from '../../domain'
-import type { WorkspaceProbe, WorkspaceProbeFreshness } from './types'
+import type {
+  WorkspaceBilling,
+  WorkspaceProbe,
+  WorkspaceProbeFreshness,
+  WorkspaceTraffic,
+} from './types'
 
 const numberFormatter = new Intl.NumberFormat('zh-CN', {
   maximumFractionDigits: 1,
 })
 
 const byteUnits = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'] as const
+
+const trafficBasisLabels: Record<
+  ProbeTrafficLimitType,
+  WorkspaceTraffic['basis']
+> = {
+  sum: '合计',
+  max: '较大',
+  min: '较小',
+  up: '上行',
+  down: '下行',
+}
 
 const validNonNegativeNumber = (value: number | null | undefined) =>
   typeof value === 'number' && Number.isFinite(value) && value >= 0
@@ -61,6 +78,124 @@ export function formatUptime(value: number | null | undefined): string | null {
   }
 
   return parts.join(' ')
+}
+
+export function formatBillingCycle(days: number): string | null {
+  if (days === -1) return '一次'
+  if (days >= 27 && days <= 32) return '月'
+  if (days >= 87 && days <= 95) return '季'
+  if (days >= 175 && days <= 185) return '半年'
+  if (days >= 360 && days <= 370) return '年'
+  if (days >= 720 && days <= 750) return '两年'
+  if (days >= 1080 && days <= 1150) return '三年'
+  if (days >= 1800 && days <= 1850) return '五年'
+  return days > 0 ? `${days}天` : null
+}
+
+function formatBilling(
+  billing: {
+    price: number
+    cycleDays: number
+    autoRenewal: boolean
+    currency: string | null
+    expiresAt: string | null
+  },
+  now: Date,
+): WorkspaceBilling | null {
+  const cycle = formatBillingCycle(billing.cycleDays)
+  const price =
+    billing.price === -1
+      ? '免费'
+      : billing.price > 0
+        ? `${billing.currency ?? ''}${numberFormatter.format(billing.price)}${cycle ? `/${cycle}` : ''}`
+        : null
+
+  if (!billing.expiresAt) {
+    return price || billing.autoRenewal
+      ? {
+          price,
+          remaining: null,
+          expiresOn: null,
+          autoRenewal: billing.autoRenewal,
+          tone: 'normal',
+        }
+      : null
+  }
+
+  const expiresAt = new Date(billing.expiresAt)
+  if (!Number.isFinite(expiresAt.getTime())) {
+    return price || billing.autoRenewal
+      ? {
+          price,
+          remaining: null,
+          expiresOn: null,
+          autoRenewal: billing.autoRenewal,
+          tone: 'normal',
+        }
+      : null
+  }
+
+  const remainingDays = Math.ceil(
+    (expiresAt.getTime() - now.getTime()) / 86_400_000,
+  )
+  const expiresOn = expiresAt.toISOString().slice(0, 10)
+  if (remainingDays <= 0) {
+    return {
+      price,
+      remaining: '已到期',
+      expiresOn,
+      autoRenewal: billing.autoRenewal,
+      tone: 'expired',
+    }
+  }
+
+  return {
+    price,
+    remaining: remainingDays > 36_500 ? '长期' : `余${remainingDays}天`,
+    expiresOn,
+    autoRenewal: billing.autoRenewal,
+    tone:
+      remainingDays <= 7
+        ? 'critical'
+        : remainingDays <= 15
+          ? 'warning'
+          : 'normal',
+  }
+}
+
+export function trafficUsedBytes(
+  upload: number | null,
+  download: number | null,
+  type: ProbeTrafficLimitType,
+): number | null {
+  if (type === 'up') return upload
+  if (type === 'down') return download
+  if (upload === null || download === null) return null
+  if (type === 'sum') return upload + download
+  return type === 'min'
+    ? Math.min(upload, download)
+    : Math.max(upload, download)
+}
+
+function formatTraffic(
+  upload: number | null,
+  download: number | null,
+  limit: { bytes: number; type: ProbeTrafficLimitType } | null,
+): WorkspaceTraffic {
+  if (!limit) {
+    return { used: null, limit: null, percent: null, basis: null }
+  }
+
+  const usedBytes = trafficUsedBytes(upload, download, limit.type)
+  return {
+    used: formatBytes(usedBytes),
+    limit: formatBytes(limit.bytes),
+    percent:
+      usedBytes === null
+        ? null
+        : Math.round((usedBytes / limit.bytes) * 1_000) / 10,
+    basis: trafficBasisLabels[limit.type],
+  }
 }
 
 const ageAmount = (ageMs: number) => {
@@ -160,6 +295,8 @@ export function workspaceProbesFromDomain({
       isInvalidValue(snapshot.uptimeSeconds)
         ? 'invalid'
         : 'valid'
+    const uploadTotalBytes = normalizedValue(snapshot.totalUploadBytes)
+    const downloadTotalBytes = normalizedValue(snapshot.totalDownloadBytes)
 
     return {
       id: probe.id,
@@ -171,6 +308,8 @@ export function workspaceProbesFromDomain({
       cpuCores: probe.cpuCores,
       memoryTotal: formatBytes(probe.memoryTotal),
       diskTotal: formatBytes(probe.diskTotal),
+      publicRemark: probe.publicRemark,
+      tags: probe.tags,
       connection: snapshot.connectivity,
       dataQuality,
       freshness: snapshot.freshness.state,
@@ -186,14 +325,22 @@ export function workspaceProbesFromDomain({
       memory: normalizedPercent(snapshot.memory),
       disk: normalizedPercent(snapshot.disk),
       ping: firstValidPing(snapshot.ping),
-      uploadRate: formatRate(
-        normalizedValue(snapshot.networkOutBytesPerSecond),
+      network: {
+        uploadRate: formatRate(
+          normalizedValue(snapshot.networkOutBytesPerSecond),
+        ),
+        downloadRate: formatRate(
+          normalizedValue(snapshot.networkInBytesPerSecond),
+        ),
+        uploadTotal: formatBytes(uploadTotalBytes),
+        downloadTotal: formatBytes(downloadTotalBytes),
+      },
+      traffic: formatTraffic(
+        uploadTotalBytes,
+        downloadTotalBytes,
+        probe.trafficLimit,
       ),
-      downloadRate: formatRate(
-        normalizedValue(snapshot.networkInBytesPerSecond),
-      ),
-      uploadTotal: formatBytes(normalizedValue(snapshot.totalUploadBytes)),
-      downloadTotal: formatBytes(normalizedValue(snapshot.totalDownloadBytes)),
+      billing: formatBilling(probe.billing, now),
       uptime: formatUptime(normalizedValue(snapshot.uptimeSeconds)),
     }
   })

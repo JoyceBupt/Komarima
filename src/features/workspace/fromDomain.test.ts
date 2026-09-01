@@ -9,9 +9,11 @@ import latestStatusFixture from '../../../tests/fixtures/komari-1.3.2/latest-sta
 import nodesFixture from '../../../tests/fixtures/komari-1.3.2/nodes-rpc.json'
 import {
   formatBytes,
+  formatBillingCycle,
   formatRate,
   formatSampleAge,
   formatUptime,
+  trafficUsedBytes,
   workspaceProbesFromDomain,
 } from './fromDomain'
 
@@ -50,10 +52,27 @@ describe('workspaceProbesFromDomain', () => {
       memory: 50,
       disk: 50,
       ping: 21,
-      uploadRate: '1 KB/s',
-      downloadRate: '2 KB/s',
-      uploadTotal: '4.8 MB',
-      downloadTotal: '8.6 MB',
+      publicRemark: 'Public edge',
+      tags: ['production', 'asia'],
+      network: {
+        uploadRate: '1 KB/s',
+        downloadRate: '2 KB/s',
+        uploadTotal: '4.8 MB',
+        downloadTotal: '8.6 MB',
+      },
+      traffic: {
+        used: '13.4 MB',
+        limit: '1 TB',
+        percent: 0,
+        basis: '合计',
+      },
+      billing: {
+        price: '$8.5/月',
+        remaining: null,
+        expiresOn: null,
+        autoRenewal: true,
+        tone: 'normal',
+      },
       uptime: '1天',
       memoryTotal: '8 GB',
       diskTotal: '100 GB',
@@ -70,10 +89,25 @@ describe('workspaceProbesFromDomain', () => {
       cpu: 0,
       memory: 50,
       disk: 50,
-      uploadRate: '0 B/s',
-      downloadRate: '0 B/s',
-      uploadTotal: '11.4 MB',
-      downloadTotal: '21 MB',
+      network: {
+        uploadRate: '0 B/s',
+        downloadRate: '0 B/s',
+        uploadTotal: '11.4 MB',
+        downloadTotal: '21 MB',
+      },
+      traffic: {
+        used: null,
+        limit: null,
+        percent: null,
+        basis: null,
+      },
+      billing: {
+        price: '€12/月',
+        remaining: '余124天',
+        expiresOn: '2027-01-01',
+        autoRenewal: false,
+        tone: 'normal',
+      },
       uptime: '2天',
     })
   })
@@ -89,10 +123,21 @@ describe('workspaceProbesFromDomain', () => {
       memory: null,
       disk: null,
       ping: null,
-      uploadRate: null,
-      downloadRate: null,
-      uploadTotal: null,
-      downloadTotal: null,
+      publicRemark: null,
+      tags: [],
+      network: {
+        uploadRate: null,
+        downloadRate: null,
+        uploadTotal: null,
+        downloadTotal: null,
+      },
+      traffic: {
+        used: null,
+        limit: null,
+        percent: null,
+        basis: null,
+      },
+      billing: null,
       uptime: null,
       memoryTotal: null,
       diskTotal: null,
@@ -170,5 +215,23 @@ describe('workspace value formatting', () => {
     expect(formatSampleAge('fresh', 0)).toBe('刚刚')
     expect(formatSampleAge('clock-skew', -60_000)).toBe('未来 1 分钟')
     expect(formatSampleAge('invalid', null)).toBeNull()
+  })
+
+  it('formats native billing cycles without inventing a cadence', () => {
+    expect(formatBillingCycle(-1)).toBe('一次')
+    expect(formatBillingCycle(30)).toBe('月')
+    expect(formatBillingCycle(90)).toBe('季')
+    expect(formatBillingCycle(365)).toBe('年')
+    expect(formatBillingCycle(45)).toBe('45天')
+    expect(formatBillingCycle(0)).toBeNull()
+  })
+
+  it('uses the configured Komari traffic limit basis', () => {
+    expect(trafficUsedBytes(100, 40, 'sum')).toBe(140)
+    expect(trafficUsedBytes(100, 40, 'max')).toBe(100)
+    expect(trafficUsedBytes(100, 40, 'min')).toBe(40)
+    expect(trafficUsedBytes(100, null, 'up')).toBe(100)
+    expect(trafficUsedBytes(null, 40, 'down')).toBe(40)
+    expect(trafficUsedBytes(100, null, 'sum')).toBeNull()
   })
 })

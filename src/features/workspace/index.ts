@@ -1,21 +1,19 @@
-export { InspectorPane, type InspectorPaneProps } from './InspectorPane'
-export { NavigatorPane, type NavigatorPaneProps } from './NavigatorPane'
-export { ProbeEditorPane, type ProbeEditorPaneProps } from './ProbeEditorPane'
+export {
+  ProbeOverviewPane,
+  type ProbeOverviewPaneProps,
+} from './ProbeOverviewPane'
 export { ProbeWorkspace, type ProbeWorkspaceProps } from './ProbeWorkspace'
 export type {
-  NavigatorGroupNode,
-  NavigatorRegionNode,
-  NavigatorSelection,
   ProbeSort,
   ProbeSortDirection,
   ProbeSortKey,
+  WorkspaceBilling,
+  WorkspaceBillingTone,
+  WorkspaceNetwork,
   WorkspaceProbe,
   WorkspaceProbeConnection,
   WorkspaceProbeFreshness,
+  WorkspaceTraffic,
+  WorkspaceView,
 } from './types'
-export {
-  buildNavigatorTree,
-  matchesNavigatorSelection,
-  nextProbeSort,
-  sortWorkspaceProbes,
-} from './workspaceModel'
+export { nextProbeSort, sortWorkspaceProbes } from './workspaceModel'

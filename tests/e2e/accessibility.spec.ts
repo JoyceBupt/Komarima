@@ -22,7 +22,9 @@ for (const theme of themes) {
     await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' })
     await page.setViewportSize({ width: 1440, height: 900 })
     await page.goto('/')
-    await expect(page.getByRole('heading', { name: '全部探针' })).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: '探针', exact: true }),
+    ).toBeVisible()
 
     await expectNoSeriousViolations(page)
   })
@@ -40,14 +42,14 @@ for (const theme of themes) {
   })
 }
 
-test('has no serious mobile inspector violations', async ({ page }) => {
+test('has no serious mobile card violations', async ({ page }) => {
   await mockKomari132(page)
   await page.clock.setFixedTime(new Date('2026-08-30T04:00:00Z'))
   await page.emulateMedia({ colorScheme: 'light', reducedMotion: 'reduce' })
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
-  await page.getByRole('button', { name: '切换检查器' }).click()
-  await expect(page.getByRole('dialog', { name: '探针检查器' })).toBeVisible()
+  await page.getByRole('button', { name: '卡片视图' }).click()
+  await expect(page.locator('.probe-card')).toHaveCount(3)
 
   await expectNoSeriousViolations(page)
 })

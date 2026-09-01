@@ -47,9 +47,24 @@ for (const viewport of viewports) {
       await page.goto('/')
       await applyTheme(page, theme)
       await expect(
-        page.getByRole('heading', { name: '全部探针' }),
+        page.getByRole('heading', { name: '探针', exact: true }),
       ).toBeVisible()
       await captureWorkspace(page, `${theme}-${viewport.name}`)
+    })
+  }
+}
+
+for (const viewport of [viewports[0], viewports[2]]) {
+  for (const theme of themes) {
+    test(`captures ${theme} cards at ${viewport.width}px`, async ({ page }) => {
+      await mockKomari132(page)
+      await page.clock.setFixedTime(new Date('2026-08-30T04:00:00Z'))
+      await page.setViewportSize(viewport)
+      await page.goto('/')
+      await applyTheme(page, theme)
+      await page.getByRole('button', { name: '卡片视图' }).click()
+      await expect(page.locator('.probe-card')).toHaveCount(3)
+      await captureWorkspace(page, `${theme}-cards-${viewport.name}`)
     })
   }
 }
