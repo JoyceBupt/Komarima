@@ -7,6 +7,7 @@ const manifestPath = resolve(root, 'komari-theme.json')
 const packagePath = resolve(root, 'package.json')
 const previewPath = resolve(root, 'preview.png')
 const indexPath = resolve(root, 'dist/index.html')
+const expectedThemeURL = 'https://github.com/JoyceBupt/Komarima'
 const previewOnlyMarkers = [
   'KOMARIMA_PREVIEW_SCENARIO',
   'komarima-ui-preview',
@@ -91,6 +92,10 @@ async function validate() {
   assert(
     manifest.version === packageJson.version,
     'manifest.version must match package.json',
+  )
+  assert(
+    manifest.url === expectedThemeURL,
+    `manifest.url must be ${expectedThemeURL}`,
   )
   assert(
     manifest.configuration?.type === 'managed',

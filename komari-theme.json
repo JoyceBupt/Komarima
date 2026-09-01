@@ -4,6 +4,7 @@
   "description": "An Xcode and Liquid Glass-inspired probe workspace for Komari.",
   "version": "0.1.0",
   "author": "Komarima contributors",
+  "url": "https://github.com/JoyceBupt/Komarima",
   "preview": "preview.png",
   "configuration": {
     "type": "managed",
