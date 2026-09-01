@@ -22,7 +22,24 @@ export interface Probe {
   swapTotal: number | null
   diskTotal: number | null
   publicRemark: string | null
+  billing: ProbeBilling
+  trafficLimit: ProbeTrafficLimit | null
   weight: number
+}
+
+export type ProbeTrafficLimitType = 'sum' | 'max' | 'min' | 'up' | 'down'
+
+export interface ProbeBilling {
+  price: number
+  cycleDays: number
+  autoRenewal: boolean
+  currency: string | null
+  expiresAt: string | null
+}
+
+export interface ProbeTrafficLimit {
+  bytes: number
+  type: ProbeTrafficLimitType
 }
 
 export type ConnectivityState = 'online' | 'offline' | 'unknown'
@@ -65,6 +82,19 @@ const optionalText = (value: string) => {
   return normalized ? normalized : null
 }
 
+const trafficLimitTypes = new Set<ProbeTrafficLimitType>([
+  'sum',
+  'max',
+  'min',
+  'up',
+  'down',
+])
+
+const normalizeTrafficLimitType = (value: string): ProbeTrafficLimitType =>
+  trafficLimitTypes.has(value.toLowerCase() as ProbeTrafficLimitType)
+    ? (value.toLowerCase() as ProbeTrafficLimitType)
+    : 'max'
+
 export const splitProbeTags = (raw: string) => {
   const seen = new Set<string>()
   for (const value of raw.split(';')) {
@@ -88,6 +118,20 @@ export const normalizeProbe = (node: PublicNode): Probe => ({
   swapTotal: node.swap_total > 0 ? node.swap_total : null,
   diskTotal: node.disk_total > 0 ? node.disk_total : null,
   publicRemark: optionalText(node.public_remark ?? ''),
+  billing: {
+    price: node.price,
+    cycleDays: node.billing_cycle,
+    autoRenewal: node.auto_renewal,
+    currency: optionalText(node.currency),
+    expiresAt: node.expired_at,
+  },
+  trafficLimit:
+    node.traffic_limit > 0
+      ? {
+          bytes: node.traffic_limit,
+          type: normalizeTrafficLimitType(node.traffic_limit_type),
+        }
+      : null,
   weight: node.weight,
 })
 

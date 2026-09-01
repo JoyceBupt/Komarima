@@ -17,7 +17,9 @@ test('loads the public workspace without browser errors', async ({ page }) => {
   await expect(page).toHaveTitle(/Komari Monitor/)
   await expect(page.locator('#root')).not.toBeEmpty()
   await expect(page.getByRole('main')).toBeVisible()
-  await expect(page.getByRole('heading', { name: '全部探针' })).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: '探针', exact: true }),
+  ).toBeVisible()
   await expect(page.getByRole('button', { name: /Tokyo Edge/ })).toBeVisible()
   expect(browserErrors).toEqual([])
 })
@@ -64,8 +66,10 @@ test('opens the Komari admin route through a hard navigation', async ({
 
 test('opens history directly when a probe is selected', async ({ page }) => {
   const mock = await mockKomari132(page)
-  await page.goto('/?q=Tokyo')
-  await expect(page.getByRole('heading', { name: '全部探针' })).toBeVisible()
+  await page.goto('/')
+  await expect(
+    page.getByRole('heading', { name: '探针', exact: true }),
+  ).toBeVisible()
   expect(mock.rpcMethods).not.toContain('public:queryMetrics')
 
   await page.getByRole('button', { name: /Tokyo Edge/ }).click()
@@ -117,14 +121,16 @@ test('opens history directly when a probe is selected', async ({ page }) => {
   await expect(pingCard.locator('.uplot')).toBeVisible()
 
   await page.goBack()
-  await expect(page).toHaveURL(/\?q=Tokyo$/)
-  await expect(page.getByRole('heading', { name: '全部探针' })).toBeVisible()
+  await expect(page).toHaveURL(/\/$/)
+  await expect(
+    page.getByRole('heading', { name: '探针', exact: true }),
+  ).toBeVisible()
   await page.goForward()
   await expect(page.getByText('探针历史')).toBeVisible()
 
   await page.getByRole('button', { name: '24h' }).click()
   await page.getByRole('button', { name: '返回探针列表' }).click()
-  await expect(page).toHaveURL(/\?q=Tokyo$/)
+  await expect(page).toHaveURL(/\/$/)
   await page.goForward()
   await expect(page).toHaveURL(/\/instance\/node-online\?range=24h/)
 })
@@ -135,7 +141,9 @@ test('refreshes node metadata every minute while visible', async ({ page }) => {
   })
   const mock = await mockKomari132(page)
   await page.goto('/')
-  await expect(page.getByRole('heading', { name: '全部探针' })).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: '探针', exact: true }),
+  ).toBeVisible()
   expect(
     mock.rpcMethods.filter((method) => method === 'public:getNodesInformation'),
   ).toHaveLength(1)
@@ -241,48 +249,41 @@ test('reports Ping task failures as history errors', async ({ page }) => {
   await expect(page.getByRole('alert')).toContainText('加载失败')
 })
 
-test('restores filtering and sorting from the URL', async ({ page }) => {
-  await mockKomari132(page)
-
-  await page.goto('/?q=Frankfurt&connection=offline')
-  await expect(
-    page.getByRole('button', { name: /Frankfurt Core/ }),
-  ).toBeVisible()
-  await expect(page.locator('.probe-row')).toHaveCount(1)
-
-  await page.reload()
-  await expect(
-    page.getByRole('button', { name: /Frankfurt Core/ }),
-  ).toBeVisible()
-  await page.getByRole('button', { name: '按CPU降序排列' }).click()
-  await expect(page).toHaveURL(/sort=cpu/)
-  await expect(page).toHaveURL(/dir=desc/)
-})
-
-test('keeps the mobile inspector optional and history navigation reversible', async ({
+test('switches and restores the card view with native metadata', async ({
   page,
 }) => {
   await mockKomari132(page)
+  await page.clock.setFixedTime(new Date('2026-08-30T04:00:00Z'))
+  await page.goto('/')
+
+  await page.getByRole('button', { name: '卡片视图' }).click()
+  await expect(page.locator('.probe-card')).toHaveCount(3)
+  const tokyo = page.getByRole('button', { name: /Tokyo Edge/ })
+  await expect(tokyo).toContainText('Public edge')
+  await expect(tokyo).toContainText('$8.5/月')
+  await expect(tokyo).toContainText('13.4 MB / 1 TB')
+  await expect(tokyo).toContainText('合计')
+  expect(
+    await page.evaluate(() => localStorage.getItem('komarima-workspace-view')),
+  ).toBe('cards')
+
+  await page.reload()
+  await expect(page.getByRole('button', { name: '卡片视图' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+  await expect(page.locator('.probe-card')).toHaveCount(3)
+})
+
+test('keeps mobile card navigation direct and reversible', async ({ page }) => {
+  await mockKomari132(page)
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
-  const probeRow = page.getByRole('button', { name: /Tokyo Edge/ })
-
-  const inspectorToggle = page.getByRole('button', { name: '切换检查器' })
-  await inspectorToggle.click()
-  const inspector = page.getByRole('dialog', { name: '探针检查器' })
-  await expect(inspector).toBeVisible()
-  const inspectorClose = page.getByRole('button', { name: '关闭检查器' })
-  await expect(inspectorClose).toBeFocused()
-  await page.keyboard.press('Tab')
-  await expect(inspectorClose).toBeFocused()
-
-  await page.keyboard.press('Escape')
-  await expect(inspector).toHaveCount(0)
-  await expect(inspectorToggle).toBeFocused()
-
-  await probeRow.click()
+  await page.getByRole('button', { name: '卡片视图' }).click()
+  const probeCard = page.getByRole('button', { name: /Tokyo Edge/ })
+  await expect(probeCard).toContainText('Public edge')
+  await probeCard.click()
   await expect(page).toHaveURL(/\/instance\/node-online\?range=6h/)
-  await expect(inspector).toHaveCount(0)
   await expect(page.getByText('探针历史')).toBeVisible()
   await expect(page.getByRole('button', { name: '返回探针列表' })).toBeVisible()
   await expect(page.locator('.history-ping-card .uplot')).toBeVisible()
@@ -295,18 +296,13 @@ test('keeps the mobile inspector optional and history navigation reversible', as
   ).toBeLessThanOrEqual(1)
 
   await page.reload()
-  await expect(inspector).toHaveCount(0)
   await expect(page.locator('.history-ping-card .uplot')).toBeVisible()
 
   await page.goBack()
   await expect(page).toHaveURL(/\/$/)
-  await page.getByRole('button', { name: '切换检查器' }).click()
-  await expect(inspector).toBeVisible()
-
-  await inspectorClose.click()
+  await expect(page.locator('.probe-card')).toHaveCount(3)
   await page.goForward()
   await expect(page).toHaveURL(/\/instance\/node-online\?range=6h/)
-  await expect(inspector).toHaveCount(0)
   await expect(page.locator('.history-ping-card .uplot')).toBeVisible()
 })
 
@@ -386,11 +382,4 @@ test('keeps a 500-probe workspace bounded', async ({ page }) => {
   await expect(
     page.getByRole('button', { name: /Probe 0499/ }),
   ).toHaveAccessibleName(/第500项，共500项/)
-
-  await page.getByRole('button', { name: '搜索' }).click()
-  const filterStartedAt = Date.now()
-  await page.getByRole('searchbox', { name: '搜索探针' }).fill('Probe 0499')
-  await expect(page.getByRole('button', { name: /Probe 0499/ })).toBeVisible()
-  expect(Date.now() - filterStartedAt).toBeLessThan(250)
-  await expect(page.locator('.probe-row')).toHaveCount(1)
 })
