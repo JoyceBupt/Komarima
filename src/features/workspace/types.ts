@@ -18,6 +18,7 @@ export interface WorkspaceTraffic {
   limit: string | null
   percent: number | null
   basis: '合计' | '较大' | '较小' | '上行' | '下行' | null
+  resetLabel: string | null
 }
 
 export type WorkspaceBillingTone = 'normal' | 'warning' | 'critical' | 'expired'

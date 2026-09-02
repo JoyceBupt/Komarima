@@ -41,6 +41,7 @@ function probe(
       limit: '1 TB',
       percent: 50.3,
       basis: '合计',
+      resetLabel: '每月1日重置',
     },
     billing: {
       price: '$8.5/月',
@@ -108,6 +109,7 @@ describe('ProbeOverviewPane', () => {
     expect(card).toHaveTextContent('515.1 GB / 1 TB')
     expect(card).toHaveTextContent('50.3%')
     expect(card).toHaveTextContent('合计')
+    expect(card).toHaveTextContent('每月1日重置')
   })
 
   it('keeps cumulative traffic visible without a quota', () => {
@@ -116,7 +118,13 @@ describe('ProbeOverviewPane', () => {
         onSelect={vi.fn()}
         probes={[
           probe('No quota', {
-            traffic: { used: null, limit: null, percent: null, basis: null },
+            traffic: {
+              used: null,
+              limit: null,
+              percent: null,
+              basis: null,
+              resetLabel: '每月15日重置',
+            },
           }),
         ]}
         view="list"
@@ -126,6 +134,7 @@ describe('ProbeOverviewPane', () => {
     const row = screen.getByRole('button', { name: /No quota/ })
     expect(row).toHaveTextContent('↑86.4 GB')
     expect(row).toHaveTextContent('↓428.7 GB')
+    expect(row).toHaveTextContent('每月15日重置')
   })
 
   it('announces clock skew and invalid sample time', () => {

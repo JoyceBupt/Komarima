@@ -25,7 +25,7 @@
       "currency": "$",
       "expired_at": null,
       "group": "Edge",
-      "tags": "production; asia ;production",
+      "tags": "production; traffic-reset:1; asia ;production",
       "hidden": false,
       "traffic_limit": 1099511627776,
       "traffic_limit_type": "sum",

@@ -65,22 +65,28 @@ function NetworkCell({ probe }: { probe: WorkspaceProbe }) {
 }
 
 function TrafficCell({ probe }: { probe: WorkspaceProbe }) {
-  if (probe.traffic.limit) {
-    return <TrafficGauge compact traffic={probe.traffic} />
-  }
-
-  if (!probe.network.uploadTotal && !probe.network.downloadTotal) {
-    return (
-      <span aria-label="流量暂无数据" className="traffic-totals-cell is-empty">
-        —
-      </span>
-    )
-  }
-
   return (
-    <span className="traffic-totals-cell">
-      <span>↑{probe.network.uploadTotal ?? '—'}</span>
-      <span>↓{probe.network.downloadTotal ?? '—'}</span>
+    <span className="traffic-cell">
+      {probe.traffic.limit ? (
+        <TrafficGauge compact traffic={probe.traffic} />
+      ) : !probe.network.uploadTotal && !probe.network.downloadTotal ? (
+        <span
+          aria-label="流量暂无数据"
+          className="traffic-totals-cell is-empty"
+        >
+          —
+        </span>
+      ) : (
+        <span className="traffic-totals-cell">
+          <span>↑{probe.network.uploadTotal ?? '—'}</span>
+          <span>↓{probe.network.downloadTotal ?? '—'}</span>
+        </span>
+      )}
+      {probe.traffic.resetLabel ? (
+        <small className="traffic-reset-label">
+          {probe.traffic.resetLabel}
+        </small>
+      ) : null}
     </span>
   )
 }

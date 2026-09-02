@@ -24,6 +24,7 @@ export interface Probe {
   publicRemark: string | null
   billing: ProbeBilling
   trafficLimit: ProbeTrafficLimit | null
+  trafficResetDay: number | null
   weight: number
 }
 
@@ -104,12 +105,37 @@ export const splitProbeTags = (raw: string) => {
   return [...seen]
 }
 
+const trafficResetTagPattern = /^traffic-reset:(\d{1,2})$/i
+
+const trafficResetDayFromTag = (tag: string) => {
+  const match = trafficResetTagPattern.exec(tag)
+  if (!match) return null
+  const day = Number(match[1])
+  return Number.isInteger(day) && day >= 1 && day <= 31 ? day : null
+}
+
+const normalizeProbeTags = (raw: string) => {
+  const tags: string[] = []
+  let trafficResetDay: number | null = null
+
+  for (const tag of splitProbeTags(raw)) {
+    const resetDay = trafficResetDayFromTag(tag)
+    if (resetDay === null) {
+      tags.push(tag)
+      continue
+    }
+    trafficResetDay ??= resetDay
+  }
+
+  return { tags, trafficResetDay }
+}
+
 export const normalizeProbe = (node: PublicNode): Probe => ({
   id: node.uuid,
   name: node.name,
   region: optionalText(node.region),
   group: optionalText(node.group),
-  tags: splitProbeTags(node.tags),
+  ...normalizeProbeTags(node.tags),
   os: optionalText(node.os),
   arch: optionalText(node.arch),
   cpuName: optionalText(node.cpu_name),
