@@ -17,18 +17,27 @@ export function MetricGauge({
   compact?: boolean
 }) {
   if (value === null || !Number.isFinite(value)) {
+    const className = [
+      'metric-cell',
+      `metric-${tone}`,
+      'is-empty',
+      compact ? 'is-compact' : null,
+    ]
+      .filter(Boolean)
+      .join(' ')
+
+    if (!compact) {
+      return (
+        <span aria-label={`${label}暂无数据`} className={className}>
+          <span className="metric-label">{label}</span>
+          <span className="metric-value">—</span>
+          <span aria-hidden="true" className="metric-track" />
+        </span>
+      )
+    }
+
     return (
-      <span
-        aria-label={`${label}暂无数据`}
-        className={[
-          'metric-cell',
-          `metric-${tone}`,
-          'is-empty',
-          compact ? 'is-compact' : null,
-        ]
-          .filter(Boolean)
-          .join(' ')}
-      >
+      <span aria-label={`${label}暂无数据`} className={className}>
         —
       </span>
     )

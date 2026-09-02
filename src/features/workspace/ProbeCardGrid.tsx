@@ -21,6 +21,7 @@ function ProbeCard({
   const status = workspaceStatus(probe)
   const visibleTags = probe.tags.slice(0, 4)
   const extraTagCount = Math.max(0, probe.tags.length - visibleTags.length)
+  const hasContext = Boolean(probe.publicRemark || visibleTags.length)
   const hasTrafficTotals =
     probe.network.uploadTotal || probe.network.downloadTotal
 
@@ -44,32 +45,48 @@ function ProbeCard({
 
         {probe.billing ? (
           <span className="probe-card-billing" data-tone={probe.billing.tone}>
-            {probe.billing.price ? (
-              <strong>{probe.billing.price}</strong>
+            <span className="probe-card-billing-primary">
+              {probe.billing.price ? (
+                <strong>{probe.billing.price}</strong>
+              ) : null}
+              {probe.billing.remaining ? (
+                <span>{probe.billing.remaining}</span>
+              ) : null}
+            </span>
+            {probe.billing.expiresOn || probe.billing.autoRenewal ? (
+              <span className="probe-card-billing-secondary">
+                {probe.billing.expiresOn ? (
+                  <small>到期 {probe.billing.expiresOn}</small>
+                ) : null}
+                {probe.billing.autoRenewal ? <small>自动续费</small> : null}
+              </span>
             ) : null}
-            {probe.billing.remaining ? (
-              <span>{probe.billing.remaining}</span>
-            ) : null}
-            {probe.billing.expiresOn ? (
-              <small>到期 {probe.billing.expiresOn}</small>
-            ) : null}
-            {probe.billing.autoRenewal ? <small>自动续费</small> : null}
+          </span>
+        ) : (
+          <span aria-hidden="true" className="probe-card-billing is-empty" />
+        )}
+      </span>
+
+      <span
+        aria-hidden={hasContext ? undefined : 'true'}
+        className="probe-card-context"
+        data-empty={hasContext ? undefined : 'true'}
+      >
+        {probe.publicRemark ? (
+          <span className="probe-card-remark" title={probe.publicRemark}>
+            {probe.publicRemark}
+          </span>
+        ) : null}
+
+        {visibleTags.length ? (
+          <span aria-label="标签" className="probe-card-tags">
+            {visibleTags.map((tag) => (
+              <span key={tag}>{tag}</span>
+            ))}
+            {extraTagCount ? <span>+{extraTagCount}</span> : null}
           </span>
         ) : null}
       </span>
-
-      {probe.publicRemark ? (
-        <span className="probe-card-remark">{probe.publicRemark}</span>
-      ) : null}
-
-      {visibleTags.length ? (
-        <span aria-label="标签" className="probe-card-tags">
-          {visibleTags.map((tag) => (
-            <span key={tag}>{tag}</span>
-          ))}
-          {extraTagCount ? <span>+{extraTagCount}</span> : null}
-        </span>
-      ) : null}
 
       <span className="probe-card-metrics">
         <MetricGauge label="CPU" tone="cpu" value={probe.cpu} />
@@ -85,15 +102,10 @@ function ProbeCard({
         </span>
         {probe.traffic.limit ? (
           <TrafficGauge traffic={probe.traffic} />
-        ) : hasTrafficTotals ? (
-          <span className="probe-card-totals">
-            <span>↑{probe.network.uploadTotal ?? '—'}</span>
-            <span>↓{probe.network.downloadTotal ?? '—'}</span>
-          </span>
         ) : (
-          <span className="probe-card-empty">—</span>
+          <span className="probe-card-traffic-state">未设限</span>
         )}
-        {probe.traffic.limit && hasTrafficTotals ? (
+        {hasTrafficTotals ? (
           <span className="probe-card-totals">
             <span>↑{probe.network.uploadTotal ?? '—'}</span>
             <span>↓{probe.network.downloadTotal ?? '—'}</span>
