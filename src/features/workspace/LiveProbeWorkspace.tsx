@@ -80,7 +80,9 @@ function refreshAgeLabel(updatedAt: number, now: Date) {
 }
 
 function parseHistoryRange(value: string | null): HistoryRange {
-  return value === '1h' || value === '24h' || value === '7d' ? value : '6h'
+  return value === '1h' || value === '6h' || value === '24h' || value === '7d'
+    ? value
+    : '24h'
 }
 
 function WorkspaceGate({

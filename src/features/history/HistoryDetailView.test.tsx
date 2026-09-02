@@ -82,6 +82,22 @@ const pingSeries = (taskId: string): NormalizedMetricSeries => ({
 })
 
 describe('HistoryDetailView', () => {
+  it('defaults an uncontrolled history view to 24 hours', () => {
+    render(
+      <HistoryDetailView
+        defaultView="history"
+        endTimeMs={endTimeMs}
+        nodeName="东京 Web 01"
+        series={[cpuSeries]}
+      />,
+    )
+
+    expect(screen.getByRole('button', { name: '24h' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+  })
+
   it('renders weighted coverage summaries without averaging counters', () => {
     render(
       <HistoryDetailView

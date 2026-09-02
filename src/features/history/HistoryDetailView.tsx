@@ -175,7 +175,7 @@ export function HistoryDetailView({
   state = 'ready',
   errorMessage,
   defaultView = 'overview',
-  defaultRange = '6h',
+  defaultRange = '24h',
   range: controlledRange,
   endTimeMs,
   metricLabels,

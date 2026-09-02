@@ -16,6 +16,7 @@ const plotState = vi.hoisted(() => ({
     destroy: ReturnType<typeof vi.fn>
     options: {
       axes?: Array<{
+        space?: unknown
         values?: (
           self: FakePlotInstance,
           splits: number[],
@@ -142,6 +143,7 @@ describe('PingProbeChart', () => {
       [undefined, 31, 29],
     ])
     expect(plot?.options.series).toHaveLength(3)
+    expect(typeof plot?.options.axes?.[0]?.space).toBe('function')
     expect(plot?.options.series.slice(1)).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
