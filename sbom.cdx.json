@@ -1,20 +1,20 @@
 {
   "bomFormat": "CycloneDX",
   "specVersion": "1.6",
-  "serialNumber": "urn:uuid:306c1e34-49c0-51e2-9fbe-e65259cedff6",
+  "serialNumber": "urn:uuid:66cb143a-6017-5af6-ac8b-8ee81e59d373",
   "version": 1,
   "metadata": {
     "component": {
       "type": "application",
-      "bom-ref": "pkg:npm/komarima@0.2.1",
+      "bom-ref": "pkg:npm/komarima@0.2.2",
       "name": "komarima",
-      "version": "0.2.1",
+      "version": "0.2.2",
       "licenses": [
         {
           "expression": "MIT"
         }
       ],
-      "purl": "pkg:npm/komarima@0.2.1"
+      "purl": "pkg:npm/komarima@0.2.2"
     }
   },
   "components": [
@@ -219,7 +219,7 @@
   ],
   "dependencies": [
     {
-      "ref": "pkg:npm/komarima@0.2.1",
+      "ref": "pkg:npm/komarima@0.2.2",
       "dependsOn": [
         "pkg:npm/%40tanstack/react-query@5.102.8",
         "pkg:npm/react-dom@19.2.8",
