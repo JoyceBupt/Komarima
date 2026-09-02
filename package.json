@@ -1,6 +1,6 @@
 {
   "name": "komarima",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "private": true,
   "description": "An Xcode and Liquid Glass-inspired public probe workspace theme for Komari.",
   "license": "MIT",
