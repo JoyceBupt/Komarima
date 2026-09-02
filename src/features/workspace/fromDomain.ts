@@ -181,9 +181,24 @@ function formatTraffic(
   upload: number | null,
   download: number | null,
   limit: { bytes: number; type: ProbeTrafficLimitType } | null,
+  resetDay: number | null,
 ): WorkspaceTraffic {
+  const resetLabel =
+    resetDay !== null &&
+    Number.isInteger(resetDay) &&
+    resetDay >= 1 &&
+    resetDay <= 31
+      ? `每月${resetDay}日重置`
+      : null
+
   if (!limit) {
-    return { used: null, limit: null, percent: null, basis: null }
+    return {
+      used: null,
+      limit: null,
+      percent: null,
+      basis: null,
+      resetLabel,
+    }
   }
 
   const usedBytes = trafficUsedBytes(upload, download, limit.type)
@@ -195,6 +210,7 @@ function formatTraffic(
         ? null
         : Math.round((usedBytes / limit.bytes) * 1_000) / 10,
     basis: trafficBasisLabels[limit.type],
+    resetLabel,
   }
 }
 
@@ -339,6 +355,7 @@ export function workspaceProbesFromDomain({
         uploadTotalBytes,
         downloadTotalBytes,
         probe.trafficLimit,
+        probe.trafficResetDay,
       ),
       billing: formatBilling(probe.billing, now),
       uptime: formatUptime(normalizedValue(snapshot.uptimeSeconds)),

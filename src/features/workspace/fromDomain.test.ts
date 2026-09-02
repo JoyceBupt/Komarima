@@ -65,6 +65,7 @@ describe('workspaceProbesFromDomain', () => {
         limit: '1 TB',
         percent: 0,
         basis: '合计',
+        resetLabel: '每月1日重置',
       },
       billing: {
         price: '$8.5/月',

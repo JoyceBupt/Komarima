@@ -24,6 +24,9 @@ function ProbeCard({
   const hasContext = Boolean(probe.publicRemark || visibleTags.length)
   const hasTrafficTotals =
     probe.network.uploadTotal || probe.network.downloadTotal
+  const trafficMetadata = [probe.traffic.basis, probe.traffic.resetLabel]
+    .filter(Boolean)
+    .join(' · ')
 
   return (
     <button
@@ -98,7 +101,7 @@ function ProbeCard({
       <span className="probe-card-traffic">
         <span className="probe-card-section-heading">
           <strong>流量</strong>
-          {probe.traffic.basis ? <span>{probe.traffic.basis}</span> : null}
+          {trafficMetadata ? <span>{trafficMetadata}</span> : null}
         </span>
         {probe.traffic.limit ? (
           <TrafficGauge traffic={probe.traffic} />

@@ -36,6 +36,7 @@ describe('probe normalization', () => {
     const online = probes.get('node-online')
 
     expect(online?.tags).toEqual(['production', 'asia'])
+    expect(online?.trafficResetDay).toBe(1)
     expect(online?.publicRemark).toBe('Public edge')
     expect(online?.billing).toEqual({
       price: 8.5,
@@ -49,6 +50,19 @@ describe('probe normalization', () => {
       type: 'sum',
     })
     expect(online).not.toHaveProperty('ipv4')
+  })
+
+  it('keeps invalid reset metadata visible and uses the first valid day', () => {
+    const probes = normalizeProbes([
+      {
+        ...nodes[0]!,
+        tags: 'traffic-reset:0; traffic-reset:31; edge; traffic-reset:5',
+      },
+    ])
+    const probe = probes.get('node-online')
+
+    expect(probe?.trafficResetDay).toBe(31)
+    expect(probe?.tags).toEqual(['traffic-reset:0', 'edge'])
   })
 
   it('keeps connection and sample freshness orthogonal', () => {

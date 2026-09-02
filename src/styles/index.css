@@ -1024,6 +1024,25 @@ input:focus-visible {
   color: var(--km-text-secondary);
 }
 
+.traffic-cell {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+}
+
+.traffic-reset-label {
+  overflow: hidden;
+  color: var(--km-text-tertiary);
+  font-size: 9px;
+  font-weight: 500;
+  line-height: 1;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .traffic-gauge {
   display: flex;
   min-width: 0;
