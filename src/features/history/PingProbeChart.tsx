@@ -9,7 +9,7 @@ import {
   metricSeriesLabel,
   seriesIdentity,
 } from './metricPresentation'
-import { formatTimeAxisTick } from './UPlotChart'
+import { responsiveTimeAxisSpace, responsiveTimeAxisValues } from './timeAxis'
 
 export interface PingProbeChartProps {
   series: ReadonlyArray<NormalizedMetricSeries>
@@ -188,18 +188,8 @@ export function PingProbeChart({
             grid: { stroke: separator, width: 1 },
             ticks: { stroke: border, width: 1 },
             font: '12px -apple-system, BlinkMacSystemFont, sans-serif',
-            values: (self, splits) => {
-              const scale = self.scales.x
-              const spanSeconds =
-                scale &&
-                typeof scale.min === 'number' &&
-                typeof scale.max === 'number'
-                  ? Math.max(0, scale.max - scale.min)
-                  : 0
-              return splits.map((value) =>
-                formatTimeAxisTick(value, spanSeconds),
-              )
-            },
+            space: responsiveTimeAxisSpace,
+            values: responsiveTimeAxisValues,
           },
           {
             stroke: text,

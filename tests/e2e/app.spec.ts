@@ -33,6 +33,10 @@ test('loads an instance deep link through the SPA fallback', async ({
   expect(response?.ok()).toBe(true)
   await expect(page.getByRole('main')).toBeVisible()
   await expect(page.getByText('探针历史')).toBeVisible()
+  await expect(page.getByRole('button', { name: '24h' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
   await page.getByRole('button', { name: '返回探针列表' }).click()
   await expect(page).toHaveURL(/\/$/)
 })
@@ -74,7 +78,7 @@ test('opens history directly when a probe is selected', async ({ page }) => {
 
   await page.getByRole('button', { name: /Tokyo Edge/ }).click()
 
-  await expect(page).toHaveURL(/\/instance\/node-online\?range=6h/)
+  await expect(page).toHaveURL(/\/instance\/node-online\?range=24h/)
   await expect(page.getByText('探针历史')).toBeVisible()
   await expect(page.getByRole('button', { name: '1h' })).toBeVisible()
   await expect
@@ -84,6 +88,11 @@ test('opens history directly when a probe is selected', async ({ page }) => {
           .length,
     )
     .toBe(4)
+  expect(
+    mock.rpcRequests
+      .filter((request) => request.method === 'public:queryMetrics')
+      .every((request) => request.params?.hours === 24),
+  ).toBe(true)
 
   const pingCard = page.locator('.history-ping-card')
   await expect(pingCard).toBeVisible()
@@ -128,11 +137,12 @@ test('opens history directly when a probe is selected', async ({ page }) => {
   await page.goForward()
   await expect(page.getByText('探针历史')).toBeVisible()
 
-  await page.getByRole('button', { name: '24h' }).click()
+  await page.getByRole('button', { name: '6h' }).click()
+  await expect(page).toHaveURL(/\/instance\/node-online\?range=6h/)
   await page.getByRole('button', { name: '返回探针列表' }).click()
   await expect(page).toHaveURL(/\/$/)
   await page.goForward()
-  await expect(page).toHaveURL(/\/instance\/node-online\?range=24h/)
+  await expect(page).toHaveURL(/\/instance\/node-online\?range=6h/)
 })
 
 test('refreshes node metadata every minute while visible', async ({ page }) => {
@@ -311,7 +321,7 @@ test('keeps mobile card navigation direct and reversible', async ({ page }) => {
   const probeCard = page.getByRole('button', { name: /Tokyo Edge/ })
   await expect(probeCard).toContainText('Public edge')
   await probeCard.click()
-  await expect(page).toHaveURL(/\/instance\/node-online\?range=6h/)
+  await expect(page).toHaveURL(/\/instance\/node-online\?range=24h/)
   await expect(page.getByText('探针历史')).toBeVisible()
   await expect(page.getByRole('button', { name: '返回探针列表' })).toBeVisible()
   await expect(page.locator('.history-ping-card .uplot')).toBeVisible()
@@ -330,8 +340,53 @@ test('keeps mobile card navigation direct and reversible', async ({ page }) => {
   await expect(page).toHaveURL(/\/$/)
   await expect(page.locator('.probe-card')).toHaveCount(3)
   await page.goForward()
-  await expect(page).toHaveURL(/\/instance\/node-online\?range=6h/)
+  await expect(page).toHaveURL(/\/instance\/node-online\?range=24h/)
   await expect(page.locator('.history-ping-card .uplot')).toBeVisible()
+})
+
+test('keeps long-range charts responsive across mainstream widths', async ({
+  page,
+}) => {
+  await mockKomari132(page)
+  await page.clock.setFixedTime(new Date('2026-08-30T04:00:00Z'))
+
+  for (const range of ['24h', '7d'] as const) {
+    await page.goto(`/instance/node-online?range=${range}`)
+    await expect(page.getByRole('button', { name: range })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+
+    for (const width of [
+      320, 390, 768, 1_024, 1_366, 1_440, 1_920, 2_560, 3_840,
+    ]) {
+      await page.setViewportSize({ width, height: width < 768 ? 844 : 900 })
+      const pingPlot = page.locator('.history-ping-card .uplot')
+      await expect(pingPlot).toBeVisible()
+
+      await expect
+        .poll(() =>
+          pingPlot.evaluate((plot) => {
+            const host = plot.parentElement
+            const style = host ? getComputedStyle(host) : null
+            const horizontalPadding = style
+              ? Number.parseFloat(style.paddingLeft) +
+                Number.parseFloat(style.paddingRight)
+              : 0
+            const contentWidth = (host?.clientWidth ?? 0) - horizontalPadding
+            return Math.abs(contentWidth - plot.getBoundingClientRect().width)
+          }),
+        )
+        .toBeLessThanOrEqual(1)
+      expect(
+        await page.evaluate(
+          () =>
+            document.documentElement.scrollWidth -
+            document.documentElement.clientWidth,
+        ),
+      ).toBeLessThanOrEqual(1)
+    }
+  }
 })
 
 test('uses each metric retention while keeping the 7d Ping range', async ({

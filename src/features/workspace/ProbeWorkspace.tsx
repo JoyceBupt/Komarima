@@ -108,7 +108,7 @@ export function ProbeWorkspace({
 
   const selectProbe = (probe: WorkspaceProbe) => {
     navigate(
-      { pathname: `/instance/${probe.id}`, search: 'range=6h' },
+      { pathname: `/instance/${probe.id}`, search: 'range=24h' },
       { state: { fromWorkspace: true } },
     )
   }

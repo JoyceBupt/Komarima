@@ -81,4 +81,16 @@ for (const theme of themes) {
     await expect(page.locator('.uplot').first()).toBeVisible()
     await captureWorkspace(page, `${theme}-history-1440`)
   })
+
+  test(`captures ${theme} 7d history at 1440px`, async ({ page }) => {
+    await mockKomari132(page)
+    await page.clock.setFixedTime(new Date('2026-08-30T04:00:00Z'))
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await page.goto('/instance/node-online?range=7d')
+    await applyTheme(page, theme)
+    await expect(page.getByText('探针历史')).toBeVisible()
+    await expect(page.locator('.history-chart-loading')).toHaveCount(0)
+    await expect(page.locator('.uplot').first()).toBeVisible()
+    await captureWorkspace(page, `${theme}-history-7d-1440`)
+  })
 }

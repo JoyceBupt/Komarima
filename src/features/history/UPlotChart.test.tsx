@@ -1,7 +1,7 @@
 import { act, cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { NormalizedMetricSeries } from '../../domain'
-import { formatTimeAxisTick, UPlotChart } from './UPlotChart'
+import { UPlotChart } from './UPlotChart'
 
 interface FakePlotInstance {
   cursor: { idx: number | null }
@@ -12,6 +12,7 @@ const plotState = vi.hoisted(() => ({
   triggerCursor: null as ((index: number) => void) | null,
   options: null as {
     axes?: Array<{
+      space?: unknown
       values?: (
         self: FakePlotInstance,
         splits: number[],
@@ -31,6 +32,7 @@ vi.mock('uplot', () => {
       options: {
         width: number
         axes?: Array<{
+          space?: unknown
           values?: (
             self: FakePlotInstance,
             splits: number[],
@@ -86,21 +88,11 @@ const series: NormalizedMetricSeries = {
 }
 
 describe('UPlotChart cursor readout', () => {
-  it('formats short and long axes in zh-CN 24-hour time', () => {
-    const timestamp = Date.parse('2026-08-30T03:00:00Z') / 1_000
-
-    expect(formatTimeAxisTick(timestamp, 6 * 60 * 60, 'Asia/Shanghai')).toBe(
-      '11:00',
-    )
-    expect(formatTimeAxisTick(timestamp, 24 * 60 * 60, 'Asia/Shanghai')).toBe(
-      '08-30 11:00',
-    )
-  })
-
   it('starts at the latest sample and announces cursor time and value', () => {
     render(<UPlotChart label="CPU" series={series} />)
 
     expect(screen.getByText('42%')).toBeInTheDocument()
+    expect(typeof plotState.options?.axes?.[0]?.space).toBe('function')
     expect(
       screen.getByText('时间').parentElement?.querySelector('time'),
     ).toHaveAttribute('datetime', '2026-08-30T03:02:00.000Z')

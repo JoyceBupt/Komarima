@@ -8,6 +8,7 @@ import {
   formatMetricValue,
   isUsableMetricPoint,
 } from './metricPresentation'
+import { responsiveTimeAxisSpace, responsiveTimeAxisValues } from './timeAxis'
 
 export interface UPlotChartProps {
   label: string
@@ -26,34 +27,6 @@ function cssColor(
   fallback: string,
 ) {
   return style.getPropertyValue(property).trim() || fallback
-}
-
-const longAxisSpanSeconds = 24 * 60 * 60
-
-// Kept beside the chart because this formatter is part of its rendering contract.
-// eslint-disable-next-line react-refresh/only-export-components
-export function formatTimeAxisTick(
-  timestampSeconds: number,
-  spanSeconds: number,
-  timeZone?: string,
-) {
-  const parts = new Intl.DateTimeFormat('zh-CN', {
-    ...(spanSeconds >= longAxisSpanSeconds
-      ? { month: '2-digit', day: '2-digit' }
-      : {}),
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-    timeZone,
-  }).formatToParts(new Date(timestampSeconds * 1_000))
-  const values = Object.fromEntries(
-    parts.map((part) => [part.type, part.value]),
-  )
-  const time = `${values.hour}:${values.minute}`
-
-  return spanSeconds >= longAxisSpanSeconds
-    ? `${values.month}-${values.day} ${time}`
-    : time
 }
 
 function latestReadout(series: NormalizedMetricSeries): CursorReadout | null {
@@ -135,18 +108,8 @@ export function UPlotChart({ label, series, height = 232 }: UPlotChartProps) {
             grid: { stroke: separator, width: 1 },
             ticks: { stroke: border, width: 1 },
             font: '12px -apple-system, BlinkMacSystemFont, sans-serif',
-            values: (self, splits) => {
-              const scale = self.scales.x
-              const spanSeconds =
-                scale &&
-                typeof scale.min === 'number' &&
-                typeof scale.max === 'number'
-                  ? Math.max(0, scale.max - scale.min)
-                  : 0
-              return splits.map((value) =>
-                formatTimeAxisTick(value, spanSeconds),
-              )
-            },
+            space: responsiveTimeAxisSpace,
+            values: responsiveTimeAxisValues,
           },
           {
             stroke: text,
