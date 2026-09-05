@@ -2,9 +2,11 @@ import {
   lazy,
   Suspense,
   useId,
+  useMemo,
   useRef,
   useState,
   type KeyboardEvent,
+  type ReactNode,
 } from 'react'
 import type { NormalizedMetricSeries } from '../../domain'
 import {
@@ -37,6 +39,13 @@ const LazyPingProbeChart = lazy(() =>
   })),
 )
 
+export interface HistoryIssue {
+  label: string
+  state: 'loading' | 'error'
+  partial?: boolean
+  onRetry?: () => void
+}
+
 interface HistoryDetailBaseProps {
   nodeName: string
   series: ReadonlyArray<NormalizedMetricSeries>
@@ -48,6 +57,8 @@ interface HistoryDetailBaseProps {
   rangeNote?: string
   className?: string
   onRetry?: () => void
+  issues?: ReadonlyArray<HistoryIssue>
+  overviewContent?: ReactNode
 }
 
 interface ControlledHistoryRangeProps {
@@ -169,6 +180,41 @@ function EmptyState() {
   )
 }
 
+function HistoryIssues({ issues }: { issues: ReadonlyArray<HistoryIssue> }) {
+  if (!issues.length) return null
+  return (
+    <div className="history-issues">
+      {issues.map((issue) => (
+        <div
+          key={issue.label}
+          className={'history-issue is-' + issue.state}
+          role={issue.state === 'error' ? 'alert' : 'status'}
+        >
+          <span>
+            {issue.label} ·{' '}
+            {issue.state === 'loading'
+              ? '加载中'
+              : issue.partial
+                ? '部分失败'
+                : '加载失败'}
+          </span>
+          {issue.state === 'error' && issue.onRetry ? (
+            <button
+              type="button"
+              aria-label={'重试' + issue.label}
+              onClick={issue.onRetry}
+            >
+              重试
+            </button>
+          ) : null}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+const noIssues: ReadonlyArray<HistoryIssue> = []
+
 export function HistoryDetailView({
   nodeName,
   series,
@@ -183,6 +229,8 @@ export function HistoryDetailView({
   className,
   onRangeChange,
   onRetry,
+  issues = noIssues,
+  overviewContent,
 }: HistoryDetailViewProps) {
   const [view, setView] = useState<HistoryView>(defaultView)
   const [internalRange, setInternalRange] = useState<HistoryRange>(defaultRange)
@@ -191,18 +239,21 @@ export function HistoryDetailView({
   const instanceId = useId().replaceAll(':', '')
   const activeRange = controlledRange ?? internalRange
   const resolvedEndTimeMs = endTimeMs ?? latestSeriesTime(series)
-  const visibleSeries = filterSeriesByRange(
-    series,
-    activeRange,
-    resolvedEndTimeMs,
+  const visibleSeries = useMemo(
+    () => filterSeriesByRange(series, activeRange, resolvedEndTimeMs),
+    [series, activeRange, resolvedEndTimeMs],
   )
   const hasData = hasFiniteMetricData(visibleSeries)
   const actualCoverage = timeCoverage(visibleSeries)
-  const pingSeries = visibleSeries.filter(
-    (metric) => metric.metricKey === 'ping.latency_ms',
+  const pingSeries = useMemo(
+    () =>
+      visibleSeries.filter((metric) => metric.metricKey === 'ping.latency_ms'),
+    [visibleSeries],
   )
-  const standardSeries = visibleSeries.filter(
-    (metric) => metric.metricKey !== 'ping.latency_ms',
+  const standardSeries = useMemo(
+    () =>
+      visibleSeries.filter((metric) => metric.metricKey !== 'ping.latency_ms'),
+    [visibleSeries],
   )
   const titleId = `history-title-${instanceId}`
   const overviewTabId = `history-overview-tab-${instanceId}`
@@ -250,7 +301,7 @@ export function HistoryDetailView({
     if (state === 'error') {
       return <ErrorState message={errorMessage} onRetry={onRetry} />
     }
-    if (!hasData) return <EmptyState />
+    if (!hasData && !issues.length) return <EmptyState />
     return null
   }
 
@@ -261,7 +312,7 @@ export function HistoryDetailView({
     >
       <header className="history-header">
         <div className="history-title">
-          <span>探针历史</span>
+          <span>探针详情</span>
           <h2 id={titleId}>{nodeName}</h2>
         </div>
 
@@ -300,8 +351,8 @@ export function HistoryDetailView({
         </div>
       </header>
 
-      {view === 'history' ? (
-        <>
+      {view === 'history' || hasData ? (
+        <div className="history-range-toolbar">
           <div aria-label="时间范围" className="history-range-switch">
             {historyRanges.map((option) => (
               <button
@@ -317,7 +368,7 @@ export function HistoryDetailView({
           <p aria-live="polite" className="history-coverage">
             {rangeNote ?? coverageLabel(visibleSeries, activeRange)}
           </p>
-        </>
+        </div>
       ) : null}
 
       <div
@@ -328,9 +379,19 @@ export function HistoryDetailView({
         role="tabpanel"
         tabIndex={0}
       >
+        {view === 'overview' ? overviewContent : null}
+        {view === 'overview' && state === 'ready' ? (
+          <HistoryIssues issues={issues} />
+        ) : null}
         {view === 'overview' ? renderState() : null}
+        {view === 'overview' &&
+        overviewContent &&
+        state === 'ready' &&
+        hasData ? (
+          <h3 className="history-section-heading">时段统计</h3>
+        ) : null}
         {view === 'overview' && state === 'ready' && hasData ? (
-          <div className="history-overview-grid">
+          <div className="history-overview-grid" aria-label="时段统计">
             {visibleSeries.map((metric) => {
               const identity = seriesIdentity(metric)
               return (
@@ -353,6 +414,9 @@ export function HistoryDetailView({
         role="tabpanel"
         tabIndex={0}
       >
+        {view === 'history' && state === 'ready' ? (
+          <HistoryIssues issues={issues} />
+        ) : null}
         {view === 'history' ? renderState() : null}
         {view === 'history' && state === 'ready' && hasData ? (
           <div className="history-chart-list">

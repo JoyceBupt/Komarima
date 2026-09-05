@@ -40,7 +40,7 @@ function latestReadout(series: NormalizedMetricSeries): CursorReadout | null {
   return latest
 }
 
-export function UPlotChart({ label, series, height = 232 }: UPlotChartProps) {
+export function UPlotChart({ label, series, height = 208 }: UPlotChartProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [themeRevision, setThemeRevision] = useState(0)
   const [cursorReadout, setCursorReadout] = useState<CursorReadout | null>(() =>
@@ -113,6 +113,9 @@ export function UPlotChart({ label, series, height = 232 }: UPlotChartProps) {
           },
           {
             stroke: text,
+            size:
+              series.unit === 'bytes' || series.unit === 'bytes/s' ? 72 : 52,
+            gap: 6,
             grid: { stroke: separator, width: 1 },
             ticks: { stroke: border, width: 1 },
             font: '12px -apple-system, BlinkMacSystemFont, sans-serif',

@@ -32,7 +32,7 @@ test('loads an instance deep link through the SPA fallback', async ({
 
   expect(response?.ok()).toBe(true)
   await expect(page.getByRole('main')).toBeVisible()
-  await expect(page.getByText('探针历史')).toBeVisible()
+  await expect(page.getByText('探针详情')).toBeVisible()
   await expect(page.getByRole('button', { name: '24h' })).toHaveAttribute(
     'aria-pressed',
     'true',
@@ -79,7 +79,7 @@ test('opens history directly when a probe is selected', async ({ page }) => {
   await page.getByRole('button', { name: /Tokyo Edge/ }).click()
 
   await expect(page).toHaveURL(/\/instance\/node-online\?range=24h/)
-  await expect(page.getByText('探针历史')).toBeVisible()
+  await expect(page.getByText('探针详情')).toBeVisible()
   await expect(page.getByRole('button', { name: '1h' })).toBeVisible()
   await expect
     .poll(
@@ -119,6 +119,16 @@ test('opens history directly when a probe is selected', async ({ page }) => {
     ),
   ).toBe(true)
 
+  const cpuPlot = page.locator('.history-chart-card[data-tone="cpu"] .uplot')
+  const initialCpuPlot = await cpuPlot.elementHandle()
+  await page.waitForTimeout(1_200)
+  expect(
+    await cpuPlot.evaluate(
+      (element, initial) => element === initial,
+      initialCpuPlot,
+    ),
+  ).toBe(true)
+
   const tokyoToggle = pingCard.getByRole('button', {
     name: '东京 NTT，已显示',
   })
@@ -135,7 +145,7 @@ test('opens history directly when a probe is selected', async ({ page }) => {
     page.getByRole('heading', { name: '探针', exact: true }),
   ).toBeVisible()
   await page.goForward()
-  await expect(page.getByText('探针历史')).toBeVisible()
+  await expect(page.getByText('探针详情')).toBeVisible()
 
   await page.getByRole('button', { name: '6h' }).click()
   await expect(page).toHaveURL(/\/instance\/node-online\?range=6h/)
@@ -240,7 +250,7 @@ test('ignores default-on Ping tasks not assigned to the probe', async ({
 }) => {
   const mock = await mockKomari132(page, { unassignedDefaultPing: true })
   await page.goto('/instance/node-online')
-  await expect(page.getByText('探针历史')).toBeVisible()
+  await expect(page.getByText('探针详情')).toBeVisible()
 
   await expect
     .poll(
@@ -257,6 +267,8 @@ test('reports Ping task failures as history errors', async ({ page }) => {
   await page.goto('/instance/node-online')
 
   await expect(page.getByRole('alert')).toContainText('加载失败')
+  await expect(page.locator('.uplot')).toHaveCount(5)
+  await expect(page.getByRole('button', { name: '重试Ping' })).toBeVisible()
 })
 
 test('switches and restores the card view with native metadata', async ({
@@ -322,7 +334,7 @@ test('keeps mobile card navigation direct and reversible', async ({ page }) => {
   await expect(probeCard).toContainText('Public edge')
   await probeCard.click()
   await expect(page).toHaveURL(/\/instance\/node-online\?range=24h/)
-  await expect(page.getByText('探针历史')).toBeVisible()
+  await expect(page.getByText('探针详情')).toBeVisible()
   await expect(page.getByRole('button', { name: '返回探针列表' })).toBeVisible()
   await expect(page.locator('.history-ping-card .uplot')).toBeVisible()
   expect(

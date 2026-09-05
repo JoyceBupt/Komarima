@@ -1,4 +1,4 @@
-import { useRef, useState, type KeyboardEvent } from 'react'
+import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { ProbeCardGrid } from './ProbeCardGrid'
 import { MetricGauge, TrafficGauge } from './ProbeMeters'
 import { workspaceStatus } from './statusPresentation'
@@ -8,14 +8,22 @@ export interface ProbeOverviewPaneProps {
   probes: ReadonlyArray<WorkspaceProbe>
   view: WorkspaceView
   onSelect: (probe: WorkspaceProbe) => void
+  toolbar?: ReactNode
+  totalCount?: number
+  emptyLabel?: string
+  onReset?: () => void
 }
 
 function probeSecondaryLabel(probe: WorkspaceProbe) {
-  if (probe.publicRemark) return probe.publicRemark
   const status = workspaceStatus(probe)
-  if (probe.connection !== 'online' || probe.freshness !== 'fresh') {
+  if (
+    probe.connection !== 'online' ||
+    probe.freshness !== 'fresh' ||
+    probe.dataQuality !== 'valid'
+  ) {
     return status.detail
   }
+  if (probe.publicRemark) return probe.publicRemark
 
   return (
     [probe.region ?? probe.group, probe.operatingSystem]
@@ -109,9 +117,11 @@ function ProbeRow({
   onSelect: (probe: WorkspaceProbe) => void
 }) {
   const status = workspaceStatus(probe)
+  const secondaryLabel = probeSecondaryLabel(probe)
   return (
     <button
       className="probe-row"
+      data-tone={status.tone}
       data-index={index}
       onClick={() => onSelect(probe)}
       onFocus={onFocus}
@@ -126,8 +136,10 @@ function ProbeRow({
         />
         <span className="probe-copy">
           <strong>{probe.name}</strong>
-          <span className="sr-only">{status.label}</span>
-          <small>{probeSecondaryLabel(probe)}</small>
+          {!secondaryLabel.includes(status.label) ? (
+            <span className="sr-only">{status.label}</span>
+          ) : null}
+          <small>{secondaryLabel}</small>
         </span>
       </span>
       <MetricGauge compact label="CPU" tone="cpu" value={probe.cpu} />
@@ -141,6 +153,7 @@ function ProbeRow({
         suffix="ms"
         tone="ping"
         value={probe.ping}
+        detail={probe.pingLabel ?? undefined}
       />
       <span className="column-network">
         <NetworkCell probe={probe} />
@@ -150,6 +163,26 @@ function ProbeRow({
       </span>
       <span className="column-billing">
         <BillingCell probe={probe} />
+      </span>
+      <span className="probe-mobile-meta">
+        <span className="probe-mobile-disk">
+          磁盘 {probe.disk === null ? '—' : probe.disk + '%'}
+        </span>
+        <span className="probe-mobile-network">
+          ↑{probe.network.uploadRate ?? '—'} ↓
+          {probe.network.downloadRate ?? '—'}
+        </span>
+        {probe.billing ? (
+          <span className="probe-mobile-billing" data-tone={probe.billing.tone}>
+            {[
+              probe.billing.price,
+              probe.billing.remaining,
+              probe.billing.autoRenewal ? '自动续费' : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </span>
+        ) : null}
       </span>
       <span className="sr-only">
         第{index + 1}项，共{setSize}项
@@ -202,7 +235,7 @@ function ProbeList({
   return (
     <>
       <div aria-label="探针字段" className="probe-column-header">
-        <span className="probe-column-identity">探针</span>
+        <span className="probe-column-identity">名称</span>
         <span>CPU</span>
         <span>内存</span>
         <span className="column-disk">磁盘</span>
@@ -239,6 +272,10 @@ export function ProbeOverviewPane({
   probes,
   view,
   onSelect,
+  toolbar,
+  totalCount,
+  emptyLabel = '暂无探针',
+  onReset,
 }: ProbeOverviewPaneProps) {
   return (
     <section
@@ -246,7 +283,17 @@ export function ProbeOverviewPane({
       className={`workspace-pane overview-pane view-${view}`}
     >
       <header className="pane-heading overview-heading">
-        <h2 id="probe-overview-title">探针</h2>
+        <h2 id="probe-overview-title">
+          探针
+          {totalCount !== undefined ? (
+            <small className="probe-result-count" aria-hidden="true">
+              {probes.length === totalCount
+                ? totalCount
+                : probes.length + '/' + totalCount}
+            </small>
+          ) : null}
+        </h2>
+        {toolbar}
       </header>
 
       {probes.length ? (
@@ -257,7 +304,12 @@ export function ProbeOverviewPane({
         )
       ) : (
         <div className="empty-state">
-          <strong>暂无探针</strong>
+          <strong>{emptyLabel}</strong>
+          {onReset ? (
+            <button type="button" onClick={onReset}>
+              清除筛选
+            </button>
+          ) : null}
         </div>
       )}
     </section>

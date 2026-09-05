@@ -30,6 +30,7 @@ function probe(
     memory: 40,
     disk: 30,
     ping: 28,
+    pingLabel: '东京 ICMP',
     network: {
       uploadRate: '1.2 MB/s',
       downloadRate: '8.4 MB/s',

@@ -59,7 +59,7 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Browser tests
-        run: pnpm exec playwright test tests/e2e/app.spec.ts tests/e2e/accessibility.spec.ts --project=chromium --workers=1
+        run: pnpm exec playwright test tests/e2e/app.spec.ts tests/e2e/accessibility.spec.ts tests/e2e/ui-polish.spec.ts --project=chromium --workers=1
 
       - name: Build theme archive
         run: pnpm build:theme

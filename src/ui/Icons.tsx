@@ -130,3 +130,36 @@ export function ChevronLeftIcon(props: IconProps) {
     </IconFrame>
   )
 }
+
+export function SearchIcon(props: IconProps) {
+  return (
+    <IconFrame {...props}>
+      <circle
+        cx="10.5"
+        cy="10.5"
+        r="6.5"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+      <path
+        d="m16 16 4.5 4.5"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+    </IconFrame>
+  )
+}
+
+export function CloseIcon(props: IconProps) {
+  return (
+    <IconFrame {...props}>
+      <path
+        d="m7 7 10 10M17 7 7 17"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </IconFrame>
+  )
+}

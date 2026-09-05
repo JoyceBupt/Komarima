@@ -6,6 +6,8 @@ import {
 } from '../../ui/AppearanceToggle'
 import { GridIcon, ListIcon, SettingsIcon } from '../../ui/Icons'
 import { ProbeOverviewPane } from './ProbeOverviewPane'
+import { ProbeFilters } from './ProbeFilters'
+import { useProbeFilters } from './useProbeFilters'
 import type { WorkspaceProbe, WorkspaceView } from './types'
 
 const WORKSPACE_VIEW_STORAGE_KEY = 'komarima-workspace-view'
@@ -56,6 +58,7 @@ function ViewSwitch({
 
 export interface ProbeWorkspaceProps {
   probes: ReadonlyArray<WorkspaceProbe>
+  siteName?: string
   defaultAppearance?: ThemePreference
   editorContent?: ReactNode
   footerLabel?: string
@@ -65,6 +68,7 @@ export interface ProbeWorkspaceProps {
 
 export function ProbeWorkspace({
   probes,
+  siteName = 'Komarima',
   defaultAppearance = 'system',
   editorContent,
   footerLabel = 'Powered by Komari Monitor.',
@@ -76,6 +80,7 @@ export function ProbeWorkspace({
   const location = useLocation()
   const editorActive = Boolean(editorContent)
   const [view, setView] = useState<WorkspaceView>(loadWorkspaceView)
+  const filtering = useProbeFilters(probes)
   const selectedProbe = uuid
     ? (probes.find((probe) => probe.id === uuid) ?? null)
     : null
@@ -91,7 +96,10 @@ export function ProbeWorkspace({
   useEffect(() => {
     if (!uuid || selectedProbe || !probes[0]) return
     navigate(
-      { pathname: `/instance/${probes[0].id}`, search: location.search },
+      {
+        pathname: `/instance/${encodeURIComponent(probes[0].id)}`,
+        search: location.search,
+      },
       { replace: true },
     )
   }, [location.search, navigate, probes, selectedProbe, uuid])
@@ -108,7 +116,10 @@ export function ProbeWorkspace({
 
   const selectProbe = (probe: WorkspaceProbe) => {
     navigate(
-      { pathname: `/instance/${probe.id}`, search: 'range=24h' },
+      {
+        pathname: `/instance/${encodeURIComponent(probe.id)}`,
+        search: 'range=24h',
+      },
       { state: { fromWorkspace: true } },
     )
   }
@@ -122,7 +133,9 @@ export function ProbeWorkspace({
             {!editorActive ? (
               <ViewSwitch onChange={setView} view={view} />
             ) : null}
-            <span className="brand">Komarima</span>
+            <span className="brand" title={siteName}>
+              {siteName}
+            </span>
           </div>
 
           <p className="fleet-summary">
@@ -165,8 +178,20 @@ export function ProbeWorkspace({
           ) : (
             <ProbeOverviewPane
               onSelect={selectProbe}
-              probes={probes}
+              probes={filtering.visible}
               view={view}
+              totalCount={probes.length}
+              emptyLabel={filtering.active ? '无匹配探针' : '暂无探针'}
+              onReset={filtering.active ? filtering.reset : undefined}
+              toolbar={
+                <ProbeFilters
+                  filters={filtering.filters}
+                  groups={filtering.groups}
+                  active={filtering.active}
+                  onChange={filtering.update}
+                  onReset={filtering.reset}
+                />
+              }
             />
           )}
         </div>

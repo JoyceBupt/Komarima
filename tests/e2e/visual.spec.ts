@@ -70,13 +70,35 @@ for (const viewport of [viewports[0], viewports[2]]) {
 }
 
 for (const theme of themes) {
+  test(`captures ${theme} overview at 1440px`, async ({ page }) => {
+    await mockKomari132(page)
+    await page.clock.setFixedTime(new Date('2026-08-30T04:00:00Z'))
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await page.goto('/instance/node-online')
+    await applyTheme(page, theme)
+    await page.getByRole('tab', { name: '概览' }).click()
+    await expect(page.getByRole('region', { name: '探针信息' })).toBeVisible()
+    await expect(page.locator('.history-issue')).toHaveCount(0)
+    await captureWorkspace(page, `${theme}-overview-1440`)
+  })
+
+  test(`captures ${theme} mobile history`, async ({ page }) => {
+    await mockKomari132(page)
+    await page.clock.setFixedTime(new Date('2026-08-30T04:00:00Z'))
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto('/instance/node-online')
+    await applyTheme(page, theme)
+    await expect(page.locator('.uplot')).toHaveCount(6)
+    await captureWorkspace(page, `${theme}-history-390`)
+  })
+
   test(`captures ${theme} history at 1440px`, async ({ page }) => {
     await mockKomari132(page)
     await page.clock.setFixedTime(new Date('2026-08-30T04:00:00Z'))
     await page.setViewportSize({ width: 1440, height: 900 })
     await page.goto('/instance/node-online')
     await applyTheme(page, theme)
-    await expect(page.getByText('探针历史')).toBeVisible()
+    await expect(page.getByText('探针详情')).toBeVisible()
     await expect(page.locator('.history-chart-loading')).toHaveCount(0)
     await expect(page.locator('.uplot').first()).toBeVisible()
     await captureWorkspace(page, `${theme}-history-1440`)
@@ -88,7 +110,7 @@ for (const theme of themes) {
     await page.setViewportSize({ width: 1440, height: 900 })
     await page.goto('/instance/node-online?range=7d')
     await applyTheme(page, theme)
-    await expect(page.getByText('探针历史')).toBeVisible()
+    await expect(page.getByText('探针详情')).toBeVisible()
     await expect(page.locator('.history-chart-loading')).toHaveCount(0)
     await expect(page.locator('.uplot').first()).toBeVisible()
     await captureWorkspace(page, `${theme}-history-7d-1440`)

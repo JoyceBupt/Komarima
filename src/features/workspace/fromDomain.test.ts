@@ -52,6 +52,7 @@ describe('workspaceProbesFromDomain', () => {
       memory: 50,
       disk: 50,
       ping: 21,
+      pingLabel: 'Tokyo ICMP',
       publicRemark: 'Public edge',
       tags: ['production', 'asia'],
       network: {

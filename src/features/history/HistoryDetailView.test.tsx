@@ -108,7 +108,7 @@ describe('HistoryDetailView', () => {
       />,
     )
 
-    expect(screen.getByText('探针历史')).toBeInTheDocument()
+    expect(screen.getByText('探针详情')).toBeInTheDocument()
     expect(
       screen.getByRole('heading', { name: '东京 Web 01' }),
     ).toBeInTheDocument()

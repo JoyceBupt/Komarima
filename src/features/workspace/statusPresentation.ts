@@ -11,7 +11,7 @@ export function workspaceStatus(probe: WorkspaceProbe): {
   if (probe.connection === 'offline') {
     return {
       label: '离线',
-      detail: probe.ageLabel ? `离线 · ${probe.ageLabel}` : '离线',
+      detail: probe.ageLabel ? `离线 · ${probe.ageLabel}上报` : '离线',
       tone: 'offline',
     }
   }
@@ -39,7 +39,7 @@ export function workspaceStatus(probe: WorkspaceProbe): {
   if (probe.freshness === 'delayed') {
     return {
       label: '数据延迟',
-      detail: probe.ageLabel ? `数据延迟 · ${probe.ageLabel}` : '数据延迟',
+      detail: probe.ageLabel ? `数据延迟 · ${probe.ageLabel}上报` : '数据延迟',
       tone: 'delayed',
     }
   }
