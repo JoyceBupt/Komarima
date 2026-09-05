@@ -31,6 +31,7 @@ function ProbeCard({
   return (
     <button
       className="probe-card"
+      data-tone={status.tone}
       onClick={() => onSelect(probe)}
       type="button"
     >
@@ -95,7 +96,13 @@ function ProbeCard({
         <MetricGauge label="CPU" tone="cpu" value={probe.cpu} />
         <MetricGauge label="内存" tone="memory" value={probe.memory} />
         <MetricGauge label="磁盘" tone="disk" value={probe.disk} />
-        <MetricGauge label="Ping" suffix="ms" tone="ping" value={probe.ping} />
+        <MetricGauge
+          label="Ping"
+          suffix="ms"
+          tone="ping"
+          value={probe.ping}
+          detail={probe.pingLabel ?? undefined}
+        />
       </span>
 
       <span className="probe-card-traffic">

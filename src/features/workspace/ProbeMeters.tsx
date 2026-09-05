@@ -9,12 +9,14 @@ export function MetricGauge({
   value,
   suffix = '%',
   compact = false,
+  detail,
 }: {
   label: string
   tone: MetricTone
   value: number | null
   suffix?: string
   compact?: boolean
+  detail?: string
 }) {
   if (value === null || !Number.isFinite(value)) {
     const className = [
@@ -31,7 +33,9 @@ export function MetricGauge({
         <span aria-label={`${label}暂无数据`} className={className}>
           <span className="metric-label">{label}</span>
           <span className="metric-value">—</span>
-          <span aria-hidden="true" className="metric-track" />
+          {tone !== 'ping' ? (
+            <span aria-hidden="true" className="metric-track" />
+          ) : null}
         </span>
       )
     }
@@ -43,14 +47,11 @@ export function MetricGauge({
     )
   }
 
-  const progress = Math.max(
-    0,
-    Math.min(tone === 'ping' ? (value / 250) * 100 : value, 100),
-  )
+  const progress = Math.max(0, Math.min(value, 100))
 
   return (
     <span
-      aria-label={`${label}${value}${suffix}`}
+      aria-label={`${label}${value}${suffix}${detail ? '，' + detail : ''}`}
       className={[
         'metric-cell',
         `metric-${tone}`,
@@ -64,12 +65,20 @@ export function MetricGauge({
         {value}
         {suffix}
       </span>
-      <span aria-hidden="true" className="metric-track">
-        <span
-          className="metric-track-value"
-          style={{ width: `${progress}%` } as CSSProperties}
-        />
-      </span>
+      {tone === 'ping' ? (
+        detail ? (
+          <span className="metric-detail" title={detail}>
+            {detail}
+          </span>
+        ) : null
+      ) : (
+        <span aria-hidden="true" className="metric-track">
+          <span
+            className="metric-track-value"
+            style={{ width: `${progress}%` } as CSSProperties}
+          />
+        </span>
+      )}
     </span>
   )
 }

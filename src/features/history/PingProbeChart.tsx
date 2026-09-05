@@ -79,7 +79,7 @@ function legendLabel(
 export function PingProbeChart({
   series,
   metricLabels,
-  height = 280,
+  height = 230,
 }: PingProbeChartProps) {
   const pingSeries = useMemo(
     () => series.filter((metric) => metric.metricKey === 'ping.latency_ms'),

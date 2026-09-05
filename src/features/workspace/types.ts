@@ -51,6 +51,7 @@ export interface WorkspaceProbe {
   memory: number | null
   disk: number | null
   ping: number | null
+  pingLabel: string | null
   network: WorkspaceNetwork
   traffic: WorkspaceTraffic
   billing: WorkspaceBilling | null

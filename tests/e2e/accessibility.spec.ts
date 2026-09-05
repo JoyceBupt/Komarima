@@ -12,7 +12,19 @@ async function expectNoSeriousViolations(page: Page) {
     (violation) =>
       violation.impact === 'serious' || violation.impact === 'critical',
   )
-  expect(blocking).toEqual([])
+  const details = blocking
+    .flatMap((violation) =>
+      violation.nodes.map(
+        (node) =>
+          violation.id +
+          ': ' +
+          node.target.join(', ') +
+          '\n' +
+          node.failureSummary,
+      ),
+    )
+    .join('\n')
+  expect(blocking.length, details).toBe(0)
 }
 
 for (const theme of themes) {
@@ -35,7 +47,7 @@ for (const theme of themes) {
     await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' })
     await page.setViewportSize({ width: 1440, height: 900 })
     await page.goto('/instance/node-online')
-    await expect(page.getByText('探针历史')).toBeVisible()
+    await expect(page.getByText('探针详情')).toBeVisible()
     await expect(page.locator('.history-chart-loading')).toHaveCount(0)
 
     await expectNoSeriousViolations(page)
@@ -61,3 +73,21 @@ test('has no serious private gate violations', async ({ page }) => {
 
   await expectNoSeriousViolations(page)
 })
+
+for (const theme of themes) {
+  test(`has no serious ${theme} mobile list or overview violations`, async ({
+    page,
+  }) => {
+    await mockKomari132(page)
+    await page.clock.setFixedTime(new Date('2026-08-30T04:00:00Z'))
+    await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' })
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto('/')
+    await expect(page.locator('.probe-row')).toHaveCount(3)
+    await expectNoSeriousViolations(page)
+    await page.getByRole('button', { name: /Tokyo Edge/ }).click()
+    await page.getByRole('tab', { name: '概览' }).click()
+    await expect(page.getByRole('region', { name: '探针信息' })).toBeVisible()
+    await expectNoSeriousViolations(page)
+  })
+}

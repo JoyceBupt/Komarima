@@ -1,6 +1,7 @@
 export {
   HistoryDetailView,
   type HistoryDetailViewProps,
+  type HistoryIssue,
 } from './HistoryDetailView'
 export {
   availableMetricHours,

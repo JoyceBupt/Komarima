@@ -37,11 +37,13 @@ import {
   HistoryDetailView,
   seriesIdentity,
   type HistoryLoadState,
+  type HistoryIssue,
   type HistoryRange,
 } from '../history'
 import { ChevronLeftIcon } from '../../ui/Icons'
 import { workspaceProbesFromDomain } from './fromDomain'
 import { ProbeWorkspace } from './ProbeWorkspace'
+import { ProbeInfo } from './ProbeInfo'
 
 const defaultClient = new KomariApiClient()
 const historyHours: Record<HistoryRange, number> = {
@@ -89,10 +91,14 @@ function WorkspaceGate({
   title,
   message,
   action,
+  busy = false,
+  siteName = 'Komarima',
 }: {
   title: string
   message?: string
   action?: ReactNode
+  busy?: boolean
+  siteName?: string
 }) {
   return (
     <main className="km-app">
@@ -101,10 +107,15 @@ function WorkspaceGate({
         className="km-window km-gate-window"
       >
         <header className="gate-toolbar">
-          <span className="brand">Komarima</span>
+          <span className="brand">{siteName}</span>
         </header>
         <div className="workspace-gate">
-          <span aria-hidden="true" className="gate-mark" />
+          <span
+            aria-hidden="true"
+            className={busy ? 'gate-mark' : 'gate-static-mark'}
+          >
+            {busy ? null : '!'}
+          </span>
           <h1>{title}</h1>
           {message ? <p>{message}</p> : null}
           {action}
@@ -138,6 +149,27 @@ export function LiveProbeWorkspace({
     nodesQuery.isSuccess ? nodeIds : [],
   )
   const now = useClock(Boolean(nodesQuery.data?.length))
+  const settings = useMemo(
+    () => settingsFromBootstrap(bootstrapQuery.data),
+    [bootstrapQuery.data],
+  )
+  const siteName = bootstrapQuery.data?.publicInfo.sitename.trim() || 'Komarima'
+  const probes = useMemo(() => {
+    const result = workspaceProbesFromDomain({
+      nodes: nodesQuery.data ?? [],
+      latestStatuses: latestQuery.data ?? {},
+      settings,
+      now,
+    })
+    if (settings.offlinePosition === 'last')
+      result.sort(
+        (a, b) =>
+          Number(a.connection === 'offline') -
+          Number(b.connection === 'offline'),
+      )
+    return result
+  }, [nodesQuery.data, latestQuery.data, settings, now])
+  const selectedProbe = probes.find((probe) => probe.id === uuid)
   const historyRange = parseHistoryRange(searchParams.get('range'))
   const requestedHistoryHours = historyHours[historyRange]
   const selectedNode = nodesQuery.data?.find((node) => node.uuid === uuid)
@@ -226,7 +258,7 @@ export function LiveProbeWorkspace({
     client,
     bootstrapQuery.data,
     pingHistoryParams,
-    historyActive && resourceHistory.isSuccess && networkHistory.isSuccess,
+    historyActive && definitionsReady && pingTasks.isSuccess,
   )
   const accessScope = publicDataAccessScope(bootstrapQuery.data)
   const previousAccessScope = useRef(accessScope)
@@ -276,19 +308,32 @@ export function LiveProbeWorkspace({
     resourceHistory.data,
     selectedPingTasks,
   ])
-  const historyState: HistoryLoadState =
-    resourceHistory.isError ||
-    networkHistory.isError ||
-    pingTasks.isError ||
-    pingHistory.isError
+  const resourceState: HistoryLoadState = resourceHistory.isError
+    ? 'error'
+    : resourceHistory.isPending
+      ? 'loading'
+      : 'ready'
+  const networkState: HistoryLoadState = networkHistory.isError
+    ? 'error'
+    : networkHistory.isPending
+      ? 'loading'
+      : 'ready'
+  const pingState: HistoryLoadState =
+    pingTasks.isError || pingHistory.isError
       ? 'error'
-      : resourceHistory.isPending ||
-          networkHistory.isPending ||
-          metricDefinitions.isPending ||
-          pingTasks.isPending ||
+      : pingTasks.isPending ||
           (selectedPingTasks.length > 0 && pingHistory.isPending)
         ? 'loading'
         : 'ready'
+  const historyStates = [resourceState, networkState, pingState]
+  const historyState: HistoryLoadState = historyStates.every(
+    (state) => state === 'error',
+  )
+    ? 'error'
+    : metricDefinitions.isPending ||
+        historyStates.every((state) => state === 'loading')
+      ? 'loading'
+      : 'ready'
   const closeHistory = useCallback(() => {
     const state = location.state as { fromWorkspace?: boolean } | null
     if (state?.fromWorkspace) {
@@ -324,6 +369,46 @@ export function LiveProbeWorkspace({
     refetchResourceHistory,
     selectedPingTasks.length,
   ])
+  const historyIssues = useMemo(() => {
+    const issues: HistoryIssue[] = []
+    if (resourceState !== 'ready')
+      issues.push({
+        label: '资源',
+        state: resourceState,
+        onRetry: () => {
+          void refetchResourceHistory()
+        },
+      })
+    if (networkState !== 'ready')
+      issues.push({
+        label: '网络',
+        state: networkState,
+        onRetry: () => {
+          void refetchNetworkHistory()
+        },
+      })
+    if (pingState !== 'ready')
+      issues.push({
+        label: 'Ping',
+        state: pingState,
+        partial: pingHistory.series.length > 0,
+        onRetry: () => {
+          if (pingTasks.isError) void refetchPingTasks()
+          else void refetchPingHistory()
+        },
+      })
+    return issues
+  }, [
+    resourceState,
+    networkState,
+    pingState,
+    pingHistory.series.length,
+    pingTasks.isError,
+    refetchResourceHistory,
+    refetchNetworkHistory,
+    refetchPingTasks,
+    refetchPingHistory,
+  ])
   const historyRangeNote = historyAvailabilityLabel({
     requestedHours: requestedHistoryHours,
     resourceHours: Math.min(resourceHistoryHours, networkHistoryHours),
@@ -355,6 +440,10 @@ export function LiveProbeWorkspace({
             rangeNote={historyRangeNote ?? undefined}
             series={historyPresentation.series}
             state={historyState}
+            issues={historyIssues}
+            overviewContent={
+              selectedProbe ? <ProbeInfo probe={selectedProbe} /> : undefined
+            }
           />
         </section>
       ) : undefined,
@@ -366,8 +455,10 @@ export function LiveProbeWorkspace({
       historyRangeNote,
       historyPresentation,
       historyState,
+      historyIssues,
       retryHistory,
       selectedNode,
+      selectedProbe,
     ],
   )
 
@@ -402,11 +493,11 @@ export function LiveProbeWorkspace({
   }, [accessError, accessScope, client, queryClient, recoveredAccessScopes])
 
   if (accessRecoveryPending) {
-    return <WorkspaceGate title="正在验证" />
+    return <WorkspaceGate title="正在验证" busy siteName={siteName} />
   }
 
   if (bootstrapQuery.isPending) {
-    return <WorkspaceGate title="正在连接" />
+    return <WorkspaceGate title="正在连接" busy siteName={siteName} />
   }
 
   if (bootstrapQuery.isError) {
@@ -423,6 +514,7 @@ export function LiveProbeWorkspace({
         }
         message="无法读取站点信息"
         title="连接失败"
+        siteName={siteName}
       />
     )
   }
@@ -437,12 +529,13 @@ export function LiveProbeWorkspace({
         }
         message="此站点仅限已登录用户"
         title="需要登录"
+        siteName={siteName}
       />
     )
   }
 
   if (nodesQuery.isPending) {
-    return <WorkspaceGate title="正在载入探针" />
+    return <WorkspaceGate title="正在载入探针" busy siteName={siteName} />
   }
 
   if (nodesQuery.isError) {
@@ -459,24 +552,11 @@ export function LiveProbeWorkspace({
         }
         message="探针数据暂不可用"
         title="载入失败"
+        siteName={siteName}
       />
     )
   }
 
-  const settings = settingsFromBootstrap(bootstrapQuery.data)
-  const probes = workspaceProbesFromDomain({
-    nodes: nodesQuery.data,
-    latestStatuses: latestQuery.data ?? {},
-    settings,
-    now,
-  })
-  if (settings.offlinePosition === 'last') {
-    probes.sort((left, right) => {
-      const leftOffline = left.connection === 'offline' ? 1 : 0
-      const rightOffline = right.connection === 'offline' ? 1 : 0
-      return leftOffline - rightOffline
-    })
-  }
   const refreshTone = latestQuery.isError
     ? 'error'
     : latestQuery.isFetching
@@ -492,6 +572,7 @@ export function LiveProbeWorkspace({
       probes={probes}
       refreshLabel={refreshLabel}
       refreshTone={refreshTone}
+      siteName={siteName}
     />
   )
 }

@@ -269,7 +269,11 @@ const firstValidPing = (ping: Map<string, ProbePing>) => {
   )
   for (const [, task] of entries) {
     const latency = normalizedValue(task.latency)
-    if (latency !== null) return latency
+    if (latency !== null)
+      return {
+        value: latency,
+        label: task.name.trim() || '任务 ' + task.taskId,
+      }
   }
   return null
 }
@@ -313,6 +317,7 @@ export function workspaceProbesFromDomain({
         : 'valid'
     const uploadTotalBytes = normalizedValue(snapshot.totalUploadBytes)
     const downloadTotalBytes = normalizedValue(snapshot.totalDownloadBytes)
+    const primaryPing = firstValidPing(snapshot.ping)
 
     return {
       id: probe.id,
@@ -340,7 +345,8 @@ export function workspaceProbesFromDomain({
           : null,
       memory: normalizedPercent(snapshot.memory),
       disk: normalizedPercent(snapshot.disk),
-      ping: firstValidPing(snapshot.ping),
+      ping: primaryPing?.value ?? null,
+      pingLabel: primaryPing?.label ?? null,
       network: {
         uploadRate: formatRate(
           normalizedValue(snapshot.networkOutBytesPerSecond),
