@@ -1,7 +1,7 @@
 {
   "bomFormat": "CycloneDX",
   "specVersion": "1.6",
-  "serialNumber": "urn:uuid:9a52c3c2-bc4d-51fc-b0da-5943a668fa46",
+  "serialNumber": "urn:uuid:a165aa79-5050-5281-b91b-e02db56e66c9",
   "version": 1,
   "metadata": {
     "component": {
@@ -20,15 +20,15 @@
   "components": [
     {
       "type": "library",
-      "bom-ref": "pkg:npm/%40tanstack/query-core@5.102.8",
+      "bom-ref": "pkg:npm/%40tanstack/query-core@5.103.1",
       "name": "@tanstack/query-core",
-      "version": "5.102.8",
+      "version": "5.103.1",
       "licenses": [
         {
           "expression": "MIT"
         }
       ],
-      "purl": "pkg:npm/%40tanstack/query-core@5.102.8",
+      "purl": "pkg:npm/%40tanstack/query-core@5.103.1",
       "externalReferences": [
         {
           "type": "website",
@@ -38,15 +38,15 @@
     },
     {
       "type": "library",
-      "bom-ref": "pkg:npm/%40tanstack/react-query@5.102.8",
+      "bom-ref": "pkg:npm/%40tanstack/react-query@5.103.1",
       "name": "@tanstack/react-query",
-      "version": "5.102.8",
+      "version": "5.103.1",
       "licenses": [
         {
           "expression": "MIT"
         }
       ],
-      "purl": "pkg:npm/%40tanstack/react-query@5.102.8",
+      "purl": "pkg:npm/%40tanstack/react-query@5.103.1",
       "externalReferences": [
         {
           "type": "website",
@@ -74,15 +74,15 @@
     },
     {
       "type": "library",
-      "bom-ref": "pkg:npm/react@19.2.8",
+      "bom-ref": "pkg:npm/react@19.3.0",
       "name": "react",
-      "version": "19.2.8",
+      "version": "19.3.0",
       "licenses": [
         {
           "expression": "MIT"
         }
       ],
-      "purl": "pkg:npm/react@19.2.8",
+      "purl": "pkg:npm/react@19.3.0",
       "externalReferences": [
         {
           "type": "website",
@@ -92,15 +92,15 @@
     },
     {
       "type": "library",
-      "bom-ref": "pkg:npm/react-dom@19.2.8",
+      "bom-ref": "pkg:npm/react-dom@19.3.0",
       "name": "react-dom",
-      "version": "19.2.8",
+      "version": "19.3.0",
       "licenses": [
         {
           "expression": "MIT"
         }
       ],
-      "purl": "pkg:npm/react-dom@19.2.8",
+      "purl": "pkg:npm/react-dom@19.3.0",
       "externalReferences": [
         {
           "type": "website",
@@ -110,15 +110,15 @@
     },
     {
       "type": "library",
-      "bom-ref": "pkg:npm/react-router@7.18.3",
+      "bom-ref": "pkg:npm/react-router@7.18.4",
       "name": "react-router",
-      "version": "7.18.3",
+      "version": "7.18.4",
       "licenses": [
         {
           "expression": "MIT"
         }
       ],
-      "purl": "pkg:npm/react-router@7.18.3",
+      "purl": "pkg:npm/react-router@7.18.4",
       "externalReferences": [
         {
           "type": "website",
@@ -128,15 +128,15 @@
     },
     {
       "type": "library",
-      "bom-ref": "pkg:npm/react-router-dom@7.18.3",
+      "bom-ref": "pkg:npm/react-router-dom@7.18.4",
       "name": "react-router-dom",
-      "version": "7.18.3",
+      "version": "7.18.4",
       "licenses": [
         {
           "expression": "MIT"
         }
       ],
-      "purl": "pkg:npm/react-router-dom@7.18.3",
+      "purl": "pkg:npm/react-router-dom@7.18.4",
       "externalReferences": [
         {
           "type": "website",
@@ -146,15 +146,15 @@
     },
     {
       "type": "library",
-      "bom-ref": "pkg:npm/scheduler@0.27.0",
+      "bom-ref": "pkg:npm/scheduler@0.28.0",
       "name": "scheduler",
-      "version": "0.27.0",
+      "version": "0.28.0",
       "licenses": [
         {
           "expression": "MIT"
         }
       ],
-      "purl": "pkg:npm/scheduler@0.27.0",
+      "purl": "pkg:npm/scheduler@0.28.0",
       "externalReferences": [
         {
           "type": "website",
@@ -200,15 +200,15 @@
     },
     {
       "type": "library",
-      "bom-ref": "pkg:npm/zod@4.5.4",
+      "bom-ref": "pkg:npm/zod@4.6.5",
       "name": "zod",
-      "version": "4.5.4",
+      "version": "4.6.5",
       "licenses": [
         {
           "expression": "MIT"
         }
       ],
-      "purl": "pkg:npm/zod@4.5.4",
+      "purl": "pkg:npm/zod@4.6.5",
       "externalReferences": [
         {
           "type": "website",
@@ -221,23 +221,23 @@
     {
       "ref": "pkg:npm/komarima@0.3.0",
       "dependsOn": [
-        "pkg:npm/%40tanstack/react-query@5.102.8",
-        "pkg:npm/react-dom@19.2.8",
-        "pkg:npm/react-router-dom@7.18.3",
-        "pkg:npm/react@19.2.8",
+        "pkg:npm/%40tanstack/react-query@5.103.1",
+        "pkg:npm/react-dom@19.3.0",
+        "pkg:npm/react-router-dom@7.18.4",
+        "pkg:npm/react@19.3.0",
         "pkg:npm/uplot@1.6.32",
-        "pkg:npm/zod@4.5.4"
+        "pkg:npm/zod@4.6.5"
       ]
     },
     {
-      "ref": "pkg:npm/%40tanstack/query-core@5.102.8",
+      "ref": "pkg:npm/%40tanstack/query-core@5.103.1",
       "dependsOn": []
     },
     {
-      "ref": "pkg:npm/%40tanstack/react-query@5.102.8",
+      "ref": "pkg:npm/%40tanstack/react-query@5.103.1",
       "dependsOn": [
-        "pkg:npm/%40tanstack/query-core@5.102.8",
-        "pkg:npm/react@19.2.8"
+        "pkg:npm/%40tanstack/query-core@5.103.1",
+        "pkg:npm/react@19.3.0"
       ]
     },
     {
@@ -245,35 +245,35 @@
       "dependsOn": []
     },
     {
-      "ref": "pkg:npm/react@19.2.8",
+      "ref": "pkg:npm/react@19.3.0",
       "dependsOn": []
     },
     {
-      "ref": "pkg:npm/react-dom@19.2.8",
+      "ref": "pkg:npm/react-dom@19.3.0",
       "dependsOn": [
-        "pkg:npm/react@19.2.8",
-        "pkg:npm/scheduler@0.27.0"
+        "pkg:npm/react@19.3.0",
+        "pkg:npm/scheduler@0.28.0"
       ]
     },
     {
-      "ref": "pkg:npm/react-router@7.18.3",
+      "ref": "pkg:npm/react-router@7.18.4",
       "dependsOn": [
         "pkg:npm/cookie@1.1.1",
-        "pkg:npm/react-dom@19.2.8",
-        "pkg:npm/react@19.2.8",
+        "pkg:npm/react-dom@19.3.0",
+        "pkg:npm/react@19.3.0",
         "pkg:npm/set-cookie-parser@2.7.2"
       ]
     },
     {
-      "ref": "pkg:npm/react-router-dom@7.18.3",
+      "ref": "pkg:npm/react-router-dom@7.18.4",
       "dependsOn": [
-        "pkg:npm/react-dom@19.2.8",
-        "pkg:npm/react-router@7.18.3",
-        "pkg:npm/react@19.2.8"
+        "pkg:npm/react-dom@19.3.0",
+        "pkg:npm/react-router@7.18.4",
+        "pkg:npm/react@19.3.0"
       ]
     },
     {
-      "ref": "pkg:npm/scheduler@0.27.0",
+      "ref": "pkg:npm/scheduler@0.28.0",
       "dependsOn": []
     },
     {
@@ -285,7 +285,7 @@
       "dependsOn": []
     },
     {
-      "ref": "pkg:npm/zod@4.5.4",
+      "ref": "pkg:npm/zod@4.6.5",
       "dependsOn": []
     }
   ]

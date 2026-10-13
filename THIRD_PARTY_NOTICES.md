@@ -2,7 +2,7 @@
 
 Komarima includes the following runtime dependencies. The CycloneDX SBOM records the same release dependency set.
 
-## @tanstack/query-core 5.102.8
+## @tanstack/query-core 5.103.1
 
 License: MIT
 Source: https://tanstack.com/query
@@ -31,7 +31,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## @tanstack/react-query 5.102.8
+## @tanstack/react-query 5.103.1
 
 License: MIT
 Source: https://tanstack.com/query
@@ -91,7 +91,7 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-## react 19.2.8
+## react 19.3.0
 
 License: MIT
 Source: https://react.dev/
@@ -120,7 +120,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## react-dom 19.2.8
+## react-dom 19.3.0
 
 License: MIT
 Source: https://react.dev/
@@ -149,7 +149,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## react-router 7.18.3
+## react-router 7.18.4
 
 License: MIT
 Source: https://github.com/remix-run/react-router
@@ -180,7 +180,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## react-router-dom 7.18.3
+## react-router-dom 7.18.4
 
 License: MIT
 Source: https://github.com/remix-run/react-router
@@ -211,7 +211,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## scheduler 0.27.0
+## scheduler 0.28.0
 
 License: MIT
 Source: https://react.dev/
@@ -298,7 +298,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ```
 
-## zod 4.5.4
+## zod 4.6.5
 
 License: MIT
 Source: https://zod.dev
